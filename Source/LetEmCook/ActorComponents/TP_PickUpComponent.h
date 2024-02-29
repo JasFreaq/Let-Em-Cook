@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Components/SphereComponent.h"
-#include "LetEmCookCharacter.h"
+#include "LetEmCook/Characters/LetEmCookCharacter.h"
 #include "TP_PickUpComponent.generated.h"
+
+//class ALetEmCookCharacter;
 
 // Declaration of the delegate that will be called when someone picks this up
 // The character picking this up is the parameter sent with the notification
@@ -17,12 +19,12 @@ class LETEMCOOK_API UTP_PickUpComponent : public USphereComponent
 	GENERATED_BODY()
 
 public:
-	
 	/** Delegate to whom anyone can subscribe to receive this event */
 	UPROPERTY(BlueprintAssignable, Category = "Interaction")
 	FOnPickUp OnPickUp;
 
 	UTP_PickUpComponent();
+
 protected:
 
 	/** Called when the game starts */

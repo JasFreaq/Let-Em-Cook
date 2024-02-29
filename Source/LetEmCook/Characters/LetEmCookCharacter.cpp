@@ -1,14 +1,13 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "LetEmCookCharacter.h"
-#include "LetEmCookProjectile.h"
-#include "Animation/AnimInstance.h"
+#include "LetEmCook/Actors/LetEmCookProjectile.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 
-#include "TP_WeaponComponent.h"
+#include "LetEmCook/ActorComponents/TP_WeaponComponent.h"
 
 
 //////////////////////////////////////////////////////////////////////////

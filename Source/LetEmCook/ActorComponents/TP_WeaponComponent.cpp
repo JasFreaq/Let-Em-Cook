@@ -2,8 +2,8 @@
 
 
 #include "TP_WeaponComponent.h"
-#include "LetEmCookCharacter.h"
-#include "LetEmCookProjectile.h"
+#include "LetEmCook/Characters/LetEmCookCharacter.h"
+#include "LetEmCook/Actors/LetEmCookProjectile.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -43,7 +43,10 @@ void UTP_WeaponComponent::Fire()
 	
 			// Spawn the projectile at the muzzle
 			const ALetEmCookProjectile* Projectile = World->SpawnActor<ALetEmCookProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
-			Projectile->GetProjectileMovement()->Activate();
+			if (Projectile != nullptr)
+			{
+				Projectile->GetProjectileMovement()->Activate();
+			}
 		}
 	}
 	
