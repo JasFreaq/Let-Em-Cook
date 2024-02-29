@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "LetEmCookProjectile.generated.h"
 
-class USphereComponent;
+class UBoxComponent;
 class UProjectileMovementComponent;
 
 UCLASS(config=Game)
@@ -15,8 +15,8 @@ class ALetEmCookProjectile : public AActor
 	GENERATED_BODY()
 
 	/** Sphere collision component */
-	UPROPERTY(VisibleDefaultsOnly, Category=Projectile)
-	USphereComponent* CollisionComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Projectile, meta = (AllowPrivateAccess = "true"))
+	UBoxComponent* CollisionComp;
 
 	/** Projectile movement component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
@@ -30,7 +30,8 @@ public:
 	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 	/** Returns CollisionComp subobject **/
-	USphereComponent* GetCollisionComp() const { return CollisionComp; }
+	UBoxComponent* GetCollisionComp() const { return CollisionComp; }
+
 	/** Returns ProjectileMovement subobject **/
 	UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovement; }
 };

@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 
 // Sets default values for this component's properties
 UTP_WeaponComponent::UTP_WeaponComponent()
@@ -41,7 +42,8 @@ void UTP_WeaponComponent::Fire()
 			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 	
 			// Spawn the projectile at the muzzle
-			World->SpawnActor<ALetEmCookProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+			const ALetEmCookProjectile* Projectile = World->SpawnActor<ALetEmCookProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+			Projectile->GetProjectileMovement()->Activate();
 		}
 	}
 	
@@ -74,10 +76,12 @@ void UTP_WeaponComponent::AttachWeapon(ALetEmCookCharacter* TargetCharacter)
 	// Attach the weapon to the First Person Character
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
 	AttachToComponent(Character->GetMesh1P(), AttachmentRules, FName(TEXT("GripPoint")));
-	
 	// switch bHasRifle so the animation blueprint can switch to another animation set
 	Character->SetHasRifle(true);
+}
 
+void UTP_WeaponComponent::AssignActionBindings()
+{
 	// Set up action bindings
 	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
 	{

@@ -45,6 +45,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	void AttachWeapon(ALetEmCookCharacter* TargetCharacter);
 
+	/** Assigns input on BeginPlay */
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void AssignActionBindings();
+
 	/** Make the weapon Fire a Projectile */
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	void Fire();

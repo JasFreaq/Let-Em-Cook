@@ -8,6 +8,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 
+#include "TP_WeaponComponent.h"
+
 
 //////////////////////////////////////////////////////////////////////////
 // ALetEmCookCharacter
@@ -35,6 +37,9 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 
+	// Create Weapon Component
+	WeaponComp = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("WeaponComponent"));
+	WeaponComp->AttachWeapon(this);
 }
 
 void ALetEmCookCharacter::BeginPlay()
@@ -51,6 +56,7 @@ void ALetEmCookCharacter::BeginPlay()
 		}
 	}
 
+	WeaponComp->AssignActionBindings();
 }
 
 //////////////////////////////////////////////////////////////////////////// Input

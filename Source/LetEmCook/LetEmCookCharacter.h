@@ -13,6 +13,7 @@ class USceneComponent;
 class UCameraComponent;
 class UAnimMontage;
 class USoundBase;
+class UTP_WeaponComponent;
 
 UCLASS(config=Game)
 class ALetEmCookCharacter : public ACharacter
@@ -48,9 +49,13 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Mesh)
 	USkeletalMeshComponent* Mesh1P;
 
+	/** Weapon*/
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Projectile)
+	UTP_WeaponComponent* WeaponComp;
+
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* LookAction;
+	UInputAction* LookAction;
 
 	/** Bool for AnimBP to switch to another animation set */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon)
@@ -79,7 +84,7 @@ protected:
 public:
 	/** Returns Mesh1P subobject **/
 	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
+
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 };
-

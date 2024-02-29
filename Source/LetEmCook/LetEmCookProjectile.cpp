@@ -2,13 +2,13 @@
 
 #include "LetEmCookProjectile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "Components/SphereComponent.h"
+#include "Components/BoxComponent.h"
 
 ALetEmCookProjectile::ALetEmCookProjectile() 
 {
 	// Use a sphere as a simple collision representation
-	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
-	CollisionComp->InitSphereRadius(5.0f);
+	CollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComp"));
+	CollisionComp->InitBoxExtent(FVector(14.0f, 6.0f, 60.0f));
 	CollisionComp->BodyInstance.SetCollisionProfileName("Projectile");
 	CollisionComp->OnComponentHit.AddDynamic(this, &ALetEmCookProjectile::OnHit);		// set up a notification for when this component hits something blocking
 
@@ -25,19 +25,18 @@ ALetEmCookProjectile::ALetEmCookProjectile()
 	ProjectileMovement->InitialSpeed = 3000.f;
 	ProjectileMovement->MaxSpeed = 3000.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
-	ProjectileMovement->bShouldBounce = true;
+	ProjectileMovement->bShouldBounce = false;
+	ProjectileMovement->bAutoActivate = false;
 
 	// Die after 3 seconds by default
-	InitialLifeSpan = 3.0f;
+	// InitialLifeSpan = 3.0f;
 }
 
 void ALetEmCookProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	// Only add impulse and destroy projectile if we hit a physics
-	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr) && OtherComp->IsSimulatingPhysics())
+	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr))
 	{
-		OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
-
 		Destroy();
 	}
 }
