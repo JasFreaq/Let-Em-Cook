@@ -35,63 +35,7 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 }
 
-void ALetEmCookCharacter::BeginPlay()
-{
-	// Call the base class  
-	Super::BeginPlay();
-
-	//Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
-
-	if (ProjectileClasses.Num() > 0)
-	{
-		CurrentProjectileClass = ProjectileClasses[0];
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////// Input
-
-void ALetEmCookCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
-{
-	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
-	{
-		//Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
-		//Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::Move);
-
-		//Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::Look);
-	
-		//Throwing
-		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::Throw);
-
-		//Changing selected utensil
-		EnhancedInputComponent->BindAction(SelectPreviousAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::SetProjectileToPrevious);
-		EnhancedInputComponent->BindAction(SelectNextAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::SetProjectileToNext);
-	}
-}
-
-void ALetEmCookCharacter::Throw()
-{
-	if (GetController() == nullptr)
-	{
-		return;
-	}
-
-	SpawnProjectile();
-}
-
-void ALetEmCookCharacter::SpawnProjectile()
+void ALetEmCookCharacter::LaunchProjectile()
 {
 	if (HasAuthority())
 	{
@@ -115,15 +59,186 @@ void ALetEmCookCharacter::SpawnProjectile()
 				if (Projectile != nullptr)
 				{
 					Projectile->GetProjectileMovement()->Activate();
-
-					Multicast_HandleProjectileSpawnEffects();
 				}
 			}
 		}
 	}
 	else
 	{
-		Server_SpawnProjectile();
+		Server_LaunchProjectile();
+	}
+}
+
+void ALetEmCookCharacter::BeginPlay()
+{
+	// Call the base class  
+	Super::BeginPlay();
+
+	//Add Input Mapping Context
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+	}
+
+	if (ProjectileClasses.Num() > 0)
+	{
+		CurrentProjectileClass = ProjectileClasses[0];
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////// Input
+
+void ALetEmCookCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	// Set up action bindings
+	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		//Jumping
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+
+		//Moving
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::Move);
+
+		//Looking
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::Look);
+	
+		//Throwing
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::AimProjectile);
+		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::ThrowProjectile);
+
+		//Changing selected utensil
+		EnhancedInputComponent->BindAction(SelectPreviousAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::SetProjectileToPrevious);
+		EnhancedInputComponent->BindAction(SelectNextAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::SetProjectileToNext);
+	}
+}
+
+void ALetEmCookCharacter::AimProjectile()
+{
+	if (GetController() == nullptr)
+	{
+		return;
+	}
+
+	if (HasAuthority())
+	{
+		Multicast_HandleProjectileAimedEffects();
+	}
+	else
+	{
+		Server_AimProjectile();
+	}
+}
+
+void ALetEmCookCharacter::ThrowProjectile()
+{
+	if (GetController() == nullptr)
+	{
+		return;
+	}
+
+	if (HasAuthority())
+	{
+		Multicast_HandleProjectileThrownEffects();
+	}
+	else
+	{
+		Server_ThrowProjectile();
+	}
+}
+
+void ALetEmCookCharacter::Server_LaunchProjectile_Implementation()
+{
+	LaunchProjectile();
+}
+
+void ALetEmCookCharacter::Server_AimProjectile_Implementation()
+{
+	AimProjectile();
+}
+
+void ALetEmCookCharacter::Multicast_HandleProjectileAimedEffects_Implementation()
+{
+	// Try and play a throwing animation if specified
+	if (ThrowAnimation != nullptr)
+	{
+		UAnimInstance* AnimInstance;
+		if (IsLocallyControlled())
+		{
+			AnimInstance = GetMesh1P()->GetAnimInstance();
+		}
+		else
+		{
+			AnimInstance = GetMesh()->GetAnimInstance();
+		}
+
+		if (AnimInstance != nullptr)
+		{
+			AnimInstance->Montage_Play(ThrowAnimation, ThrowAnimationRate);
+		}
+	}
+}
+
+void ALetEmCookCharacter::Server_ThrowProjectile_Implementation()
+{
+	ThrowProjectile();
+}
+
+void ALetEmCookCharacter::Multicast_HandleProjectileThrownEffects_Implementation()
+{
+	// Try and play the sound if specified
+	if (ThrowSound != nullptr)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ThrowSound, GetActorLocation());
+	}
+
+	// Try and play a throwing animation if specified
+	if (ThrowAnimation != nullptr)
+	{
+		UAnimInstance* AnimInstance;
+		if (IsLocallyControlled())
+		{
+			AnimInstance = GetMesh1P()->GetAnimInstance();
+		}
+		else 
+		{
+			AnimInstance = GetMesh()->GetAnimInstance();
+		}
+		
+		if (AnimInstance != nullptr)
+		{
+			AnimInstance->Montage_Play(ThrowAnimation, ThrowAnimationRate);
+			AnimInstance->Montage_JumpToSection(ThrowSectionName, ThrowAnimation);
+		}
+	}
+}
+
+void ALetEmCookCharacter::Move(const FInputActionValue& Value)
+{
+	// input is a Vector2D
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
+	if (Controller != nullptr)
+	{
+		// add movement 
+		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
+		AddMovementInput(GetActorRightVector(), MovementVector.X);
+	}
+}
+
+void ALetEmCookCharacter::Look(const FInputActionValue& Value)
+{
+	// input is a Vector2D
+	FVector2D LookAxisVector = Value.Get<FVector2D>();
+
+	if (Controller != nullptr)
+	{
+		// add yaw and pitch input to controller
+		AddControllerYawInput(LookAxisVector.X);
+		AddControllerPitchInput(LookAxisVector.Y);
 	}
 }
 
@@ -180,66 +295,4 @@ void ALetEmCookCharacter::Server_SetProjectileToNext_Implementation()
 void ALetEmCookCharacter::SetProjectile()
 {
 	CurrentProjectileClass = ProjectileClasses[CurrentProjectileIndex];
-}
-
-void ALetEmCookCharacter::Server_SpawnProjectile_Implementation()
-{
-	SpawnProjectile();
-}
-
-void ALetEmCookCharacter::Multicast_HandleProjectileSpawnEffects_Implementation()
-{
-	// Try and play the sound if specified
-	if (ThrowSound != nullptr)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, ThrowSound, GetActorLocation());
-	}
-
-	// Try and play a throwing animation if specified
-	if (ThrowAnimation != nullptr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Authority: %s"), HasAuthority() ? TEXT("Yes") : TEXT("No"));
-		UAnimInstance* AnimInstance;
-		if (HasAuthority())
-		{
-			AnimInstance = GetMesh1P()->GetAnimInstance();
-		}
-		else 
-		{
-			AnimInstance = GetMesh()->GetAnimInstance();
-		}
-
-		UE_LOG(LogTemp, Warning, TEXT("%s"), AnimInstance != nullptr ? TEXT("Not Null") : TEXT("Null"));
-		if (AnimInstance != nullptr)
-		{
-			AnimInstance->Montage_Play(ThrowAnimation, 1.f);
-		}
-	}
-}
-
-
-void ALetEmCookCharacter::Move(const FInputActionValue& Value)
-{
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
-	{
-		// add movement 
-		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
-		AddMovementInput(GetActorRightVector(), MovementVector.X);
-	}
-}
-
-void ALetEmCookCharacter::Look(const FInputActionValue& Value)
-{
-	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
-	{
-		// add yaw and pitch input to controller
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
-	}
 }

@@ -26,31 +26,15 @@ public:
 
 	ALetEmCookCharacter();
 
-	/** Pawn mesh: 1st person view (arms; seen only by self) */
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Mesh)
-	USkeletalMeshComponent* Mesh1P;	
-
-	/** Projectile class to spawn */
-	UPROPERTY(EditDefaultsOnly, Category = Projectile)
-	TArray<TSubclassOf<ALetEmCookProjectile>> ProjectileClasses;
-
-	/** Sound to play each time we fire */
-	UPROPERTY(EditDefaultsOnly, Category = Projectile)
-	USoundBase* ThrowSound;
-
-	/** AnimMontage to play each time we fire */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile)
-	UAnimMontage* ThrowAnimation;
-
-	/** Gun muzzle's offset from the characters location */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile)
-	FVector ThrowOffset;
-
 private:
 
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
+
+	/** Pawn mesh: 1st person view (arms; seen only by self) */
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* Mesh1P;
 
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -70,6 +54,9 @@ private:
 
 	/** Throw Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* AimAction;/** Throw Input Action */
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* ThrowAction;
 
 	/** Select Utensil Input Actions */
@@ -78,6 +65,30 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* SelectNextAction;
+
+	/** Projectile class to spawn */
+	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	TArray<TSubclassOf<ALetEmCookProjectile>> ProjectileClasses;
+
+	/** Sound to play each time we fire */
+	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	USoundBase* ThrowSound;
+
+	/** AnimMontage to play each time we throw */
+	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	UAnimMontage* ThrowAnimation;
+
+	/** Speed of AnimMontage to play */
+	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	float ThrowAnimationRate = 1.f;
+
+	/** Speed of AnimMontage to play */
+	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	FName ThrowSectionName = FName("Throw");
+
+	/** Gun muzzle's offset from the characters location */
+	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	FVector ThrowOffset;
 
 	int CurrentProjectileIndex;
 
@@ -90,6 +101,8 @@ public:
 
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+	void LaunchProjectile();
 
 protected:
 
@@ -107,16 +120,27 @@ protected:
 
 private:
 
-	/** Throw a Utensil/Ingredient */
-	void Throw();
+	/** Aim a Utensil/Ingredient */
+	void AimProjectile();
 
-	void SpawnProjectile();
+	/** Throw a Utensil/Ingredient */
+	void ThrowProjectile();
+
+	/** Launch the actual Utensil/Ingredient */
+	UFUNCTION(Server, Reliable)
+	void Server_LaunchProjectile();
 
 	UFUNCTION(Server, Reliable)
-	void Server_SpawnProjectile();
+	void Server_AimProjectile();
+
+	UFUNCTION(Server, Reliable)
+	void Server_ThrowProjectile();
 
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_HandleProjectileSpawnEffects();
+	void Multicast_HandleProjectileAimedEffects();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_HandleProjectileThrownEffects();
 
 	void SetProjectileToPrevious();
 
