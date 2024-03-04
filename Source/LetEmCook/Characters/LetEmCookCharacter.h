@@ -16,6 +16,8 @@ class UCameraComponent;
 class UAnimMontage;
 class USoundBase;
 class ALetEmCookProjectile;
+class UGameItemData;
+class AHeldProjectileMesh;
 
 UCLASS(config=Game)
 class ALetEmCookCharacter : public ACharacter
@@ -30,59 +32,63 @@ private:
 
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	UCameraComponent* FirstPersonCameraComponent;
+	TObjectPtr<UCameraComponent> FirstPersonCameraComponent;
 
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* Mesh1P;
+	TObjectPtr<USkeletalMeshComponent> Mesh1P;
+
+	/** AnimMontage Throw section name */
+	UPROPERTY(EditDefaultsOnly, Category = Mesh)
+	FName HandSocketName = FName("hand_rSocket");
 
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputMappingContext* DefaultMappingContext;
+	TObjectPtr<UInputMappingContext> DefaultMappingContext;
 
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* JumpAction;
+	TObjectPtr<UInputAction> JumpAction;
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* MoveAction;
+	TObjectPtr<UInputAction> MoveAction;
 
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* LookAction;
+	TObjectPtr<UInputAction> LookAction;
 
 	/** Throw Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* AimAction;/** Throw Input Action */
+	TObjectPtr<UInputAction> AimAction;/** Throw Input Action */
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* ThrowAction;
+	TObjectPtr<UInputAction> ThrowAction;
 
 	/** Select Utensil Input Actions */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* SelectPreviousAction;
+	TObjectPtr<UInputAction> SelectPreviousAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* SelectNextAction;
+	TObjectPtr<UInputAction> SelectNextAction;
 
 	/** Projectile class to spawn */
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
-	TArray<TSubclassOf<ALetEmCookProjectile>> ProjectileClasses;
-
+	TArray<TObjectPtr<UGameItemData>> UtensilProjectiles;
+	
 	/** Sound to play each time we fire */
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
-	USoundBase* ThrowSound;
+	TObjectPtr<USoundBase> ThrowSound;
 
 	/** AnimMontage to play each time we throw */
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
-	UAnimMontage* ThrowAnimation;
+	TObjectPtr<UAnimMontage> ThrowAnimation;
 
 	/** Speed of AnimMontage to play */
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
 	float ThrowAnimationRate = 1.f;
 
-	/** Speed of AnimMontage to play */
+	/** AnimMontage Throw section name */
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
 	FName ThrowSectionName = FName("Throw");
 
@@ -90,9 +96,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
 	FVector ThrowOffset;
 
+	UPROPERTY(Replicated, ReplicatedUsing = OnCurrentProjectileIndexChanged)
 	int CurrentProjectileIndex;
 
 	TSubclassOf<ALetEmCookProjectile> CurrentProjectileClass;
+
+	TArray<AHeldProjectileMesh*> ProjectileRepresentationMeshes;
 
 public:
 
@@ -103,6 +112,8 @@ public:
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
 	void LaunchProjectile();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 
@@ -153,4 +164,9 @@ private:
 	void Server_SetProjectileToNext();
 
 	void SetProjectile();
+
+	UFUNCTION()
+	void OnCurrentProjectileIndexChanged();
+	
+	void HandleHandleHeldMeshVisibility();
 };

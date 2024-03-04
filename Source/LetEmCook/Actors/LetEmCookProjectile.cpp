@@ -3,6 +3,7 @@
 #include "LetEmCookProjectile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/BoxComponent.h"
+#include "LetEmCook/DataAssets/GameItemData.h"
 
 ALetEmCookProjectile::ALetEmCookProjectile() 
 {
@@ -19,6 +20,10 @@ ALetEmCookProjectile::ALetEmCookProjectile()
 	// Set as root component
 	RootComponent = CollisionComp;
 
+	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	Mesh->SetupAttachment(CollisionComp);
+	Mesh->BodyInstance.SetCollisionProfileName("NoCollision");
+	
 	// Use a ProjectileMovementComponent to govern this projectile's movement
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
 	ProjectileMovement->UpdatedComponent = CollisionComp;

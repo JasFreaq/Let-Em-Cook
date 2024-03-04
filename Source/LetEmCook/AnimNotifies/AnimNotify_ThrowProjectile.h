@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(meta = (DisplayName = "Throw Projectile"))
 class LETEMCOOK_API UAnimNotify_ThrowProjectile : public UAnimNotify
 {
 	GENERATED_BODY()

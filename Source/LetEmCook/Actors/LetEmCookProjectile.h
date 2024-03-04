@@ -7,23 +7,38 @@
 #include "LetEmCookProjectile.generated.h"
 
 class UBoxComponent;
+class UStaticMeshComponent;
 class UProjectileMovementComponent;
+class UStaticMesh;
 
 UCLASS(config=Game)
 class ALetEmCookProjectile : public AActor
 {
 	GENERATED_BODY()
 
-	/** Sphere collision component */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Projectile, meta = (AllowPrivateAccess = "true"))
-	UBoxComponent* CollisionComp;
-
-	/** Projectile movement component */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	UProjectileMovementComponent* ProjectileMovement;
-
 public:
 	ALetEmCookProjectile();
+
+private:
+
+	/** Box collision component */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UBoxComponent> CollisionComp;
+
+	/** Static mesh component */
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,  meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> Mesh;
+
+	/** Projectile movement component */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
+
+protected:
+	/** Array of user data stored with the asset */
+	UPROPERTY(EditAnywhere, AdvancedDisplay, Instanced, Category = StaticMesh)
+	TArray<TObjectPtr<UAssetUserData>> AssetUserData;
+
+public:
 
 	/** called when projectile hits something */
 	UFUNCTION()
@@ -34,5 +49,6 @@ public:
 
 	/** Returns ProjectileMovement subobject **/
 	UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovement; }
-};
 
+	UStaticMesh* GetStaticMesh() const { return Mesh->GetStaticMesh(); }
+};

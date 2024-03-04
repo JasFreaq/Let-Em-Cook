@@ -2,6 +2,7 @@
 
 #include "LetEmCookCharacter.h"
 #include "LetEmCook/Actors/LetEmCookProjectile.h"
+#include "LetEmCook/Actors/HeldProjectileMesh.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "EnhancedInputComponent.h"
@@ -9,6 +10,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "LetEmCook/DataAssets/GameItemData.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -33,6 +35,9 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	Mesh1P->CastShadow = false;
 	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
+
+	bReplicates = true;
+	SetReplicatingMovement(true);
 }
 
 void ALetEmCookCharacter::LaunchProjectile()
@@ -69,6 +74,13 @@ void ALetEmCookCharacter::LaunchProjectile()
 	}
 }
 
+void ALetEmCookCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ALetEmCookCharacter, CurrentProjectileIndex);
+}
+
 void ALetEmCookCharacter::BeginPlay()
 {
 	// Call the base class  
@@ -83,9 +95,47 @@ void ALetEmCookCharacter::BeginPlay()
 		}
 	}
 
-	if (ProjectileClasses.Num() > 0)
+	int ProjectileClassesSize = UtensilProjectiles.Num();
+	if (ProjectileClassesSize > 0)
 	{
-		CurrentProjectileClass = ProjectileClasses[0];
+		for (int i = 0; i < ProjectileClassesSize; i++)
+		{
+			const UGameItemData* GameItem = UtensilProjectiles[i];
+			UWorld* const World = GetWorld();
+
+			if (World != nullptr)
+			{
+				//Set Spawn Collision Handling Override
+				FActorSpawnParameters ActorSpawnParams;
+				ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				AHeldProjectileMesh* HeldMeshActor = World->SpawnActor<AHeldProjectileMesh>(GameItem->GetHeldMesh(), FVector::Zero(), FQuat::Identity.Rotator(), ActorSpawnParams);
+				if (HeldMeshActor != nullptr)
+				{
+					HeldMeshActor->SetOwner(this);
+
+					USceneComponent* HeldMeshRoot = HeldMeshActor->GetRootComponent();
+
+					if (IsLocallyControlled())
+					{
+						HeldMeshRoot->AttachToComponent(Mesh1P, FAttachmentTransformRules::SnapToTargetNotIncludingScale, HandSocketName); // Attach to first person hand socket
+						HeldMeshActor->GetProjectileMesh()->SetOnlyOwnerSee(true);
+					}
+					else
+					{
+						HeldMeshActor->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, HandSocketName); // Attach to third person hand socket
+						HeldMeshActor->GetProjectileMesh()->SetOwnerNoSee(true);
+					}
+
+					HeldMeshActor->GetProjectileMesh()->SetVisibility(false);
+
+					ProjectileRepresentationMeshes.Add(HeldMeshActor);
+				}
+			}
+		}
+
+		CurrentProjectileClass = UtensilProjectiles[0]->GetProjectile();
+		ProjectileRepresentationMeshes[0]->GetProjectileMesh()->SetVisibility(true);
 	}
 }
 
@@ -246,7 +296,7 @@ void ALetEmCookCharacter::SetProjectileToPrevious()
 {
 	if (HasAuthority())
 	{
-		int rangeSize = ProjectileClasses.Num();
+		int rangeSize = UtensilProjectiles.Num();
 		int clampedValue = (CurrentProjectileIndex - 1) % rangeSize;
 		if (clampedValue < 0)
 		{
@@ -271,7 +321,7 @@ void ALetEmCookCharacter::SetProjectileToNext()
 {
 	if (HasAuthority())
 	{
-		int rangeSize = ProjectileClasses.Num();
+		int rangeSize = UtensilProjectiles.Num();
 		int clampedValue = (CurrentProjectileIndex + 1) % rangeSize;
 		if (clampedValue < 0)
 		{
@@ -294,5 +344,24 @@ void ALetEmCookCharacter::Server_SetProjectileToNext_Implementation()
 
 void ALetEmCookCharacter::SetProjectile()
 {
-	CurrentProjectileClass = ProjectileClasses[CurrentProjectileIndex];
+	CurrentProjectileClass = UtensilProjectiles[CurrentProjectileIndex]->GetProjectile();
+
+	HandleHandleHeldMeshVisibility();
+}
+
+void ALetEmCookCharacter::OnCurrentProjectileIndexChanged()
+{
+	HandleHandleHeldMeshVisibility();
+}
+
+void ALetEmCookCharacter::HandleHandleHeldMeshVisibility()
+{
+	const int ProjectileClassesSize = UtensilProjectiles.Num();
+	if (ProjectileClassesSize > 0)
+	{
+		for (int i = 0; i < ProjectileClassesSize; i++)
+		{
+			ProjectileRepresentationMeshes[i]->GetProjectileMesh()->SetVisibility(i == CurrentProjectileIndex);
+		}
+	}
 }
