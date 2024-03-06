@@ -29,9 +29,8 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,  meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> Mesh;
 
-	/** Projectile movement component */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Projectile, meta = (AllowPrivateAccess = "true"))
+	float ProjectileInitialVelocity = 30000.f;
 
 protected:
 	/** Array of user data stored with the asset */
@@ -47,8 +46,7 @@ public:
 	/** Returns CollisionComp subobject **/
 	UBoxComponent* GetCollisionComp() const { return CollisionComp; }
 
-	/** Returns ProjectileMovement subobject **/
-	UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovement; }
-
 	UStaticMesh* GetStaticMesh() const { return Mesh->GetStaticMesh(); }
+
+	void AddImpulseToProjectile(FVector ImpulseDirection);
 };

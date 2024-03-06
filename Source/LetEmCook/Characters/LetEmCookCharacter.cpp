@@ -7,9 +7,9 @@
 #include "Components/CapsuleComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Components/BoxComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/ProjectileMovementComponent.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 
 
@@ -40,46 +40,8 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	SetReplicatingMovement(true);
 }
 
-void ALetEmCookCharacter::LaunchProjectile()
-{
-	if (HasAuthority())
-	{
-		// Try and fire a projectile
-		if (CurrentProjectileClass != nullptr)
-		{
-			UWorld* const World = GetWorld();
-			if (World != nullptr)
-			{
-				APlayerController* PlayerController = Cast<APlayerController>(GetController());
-				const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
-				// ThrowOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-				const FVector SpawnLocation = GetActorLocation() + SpawnRotation.RotateVector(ThrowOffset);
-
-				//Set Spawn Collision Handling Override
-				FActorSpawnParameters ActorSpawnParams;
-				ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-
-				// Spawn the projectile at the muzzle
-				const ALetEmCookProjectile* Projectile = World->SpawnActor<ALetEmCookProjectile>(CurrentProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
-				if (Projectile != nullptr)
-				{
-					Projectile->GetProjectileMovement()->Activate();
-				}
-			}
-		}
-	}
-	else
-	{
-		Server_LaunchProjectile();
-	}
-}
-
-void ALetEmCookCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ALetEmCookCharacter, CurrentProjectileIndex);
-}
+//////////////////////////////////////////////////////////////////////////
+// Lifecycle Functions
 
 void ALetEmCookCharacter::BeginPlay()
 {
@@ -137,6 +99,28 @@ void ALetEmCookCharacter::BeginPlay()
 		CurrentProjectileClass = UtensilProjectiles[0]->GetProjectile();
 		ProjectileRepresentationMeshes[0]->GetProjectileMesh()->SetVisibility(true);
 	}
+
+	if (HasAuthority())
+	{
+		for (const TObjectPtr<UGameItemData> Utensil : UtensilProjectiles)
+		{
+			ProjectileCooldownMap.Add(Utensil->GetProjectile(), 0.f);
+		}
+	}
+}
+
+void ALetEmCookCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+
+}
+
+void ALetEmCookCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ALetEmCookCharacter, CurrentProjectileIndex);
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -166,6 +150,78 @@ void ALetEmCookCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Locomotion
+
+void ALetEmCookCharacter::Move(const FInputActionValue& Value)
+{
+	// input is a Vector2D
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
+	if (Controller != nullptr)
+	{
+		// add movement 
+		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
+		AddMovementInput(GetActorRightVector(), MovementVector.X);
+	}
+}
+
+void ALetEmCookCharacter::Look(const FInputActionValue& Value)
+{
+	// input is a Vector2D
+	FVector2D LookAxisVector = Value.Get<FVector2D>();
+
+	if (Controller != nullptr)
+	{
+		// add yaw and pitch input to controller
+		AddControllerYawInput(LookAxisVector.X);
+		AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Projectile Handling
+
+void ALetEmCookCharacter::LaunchProjectile()
+{
+	if (HasAuthority())
+	{
+		// Try and fire a projectile
+		if (CurrentProjectileClass != nullptr)
+		{
+			UWorld* const World = GetWorld();
+			if (World != nullptr)
+			{
+				float RealtimeSeconds;
+				if (CanThrowProjectile(&RealtimeSeconds))
+				{
+					APlayerController* PlayerController = Cast<APlayerController>(GetController());
+					const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
+					// ThrowOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
+					const FVector SpawnLocation = GetActorLocation() + SpawnRotation.RotateVector(ThrowOffset);
+
+					//Set Spawn Collision Handling Override
+					FActorSpawnParameters ActorSpawnParams;
+					ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+
+					// Spawn the projectile at the muzzle
+					ALetEmCookProjectile* Projectile = World->SpawnActor<ALetEmCookProjectile>(CurrentProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+					if (Projectile != nullptr)
+					{
+						ProjectileCooldownMap[CurrentProjectileClass] = RealtimeSeconds;
+
+						Projectile->AddImpulseToProjectile(SpawnRotation.Vector());
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		Server_LaunchProjectile();
+	}
+}
+
 void ALetEmCookCharacter::AimProjectile()
 {
 	if (GetController() == nullptr)
@@ -175,7 +231,10 @@ void ALetEmCookCharacter::AimProjectile()
 
 	if (HasAuthority())
 	{
-		Multicast_HandleProjectileAimedEffects();
+		if(CanThrowProjectile())
+		{
+			Multicast_HandleProjectileAimedEffects();
+		}
 	}
 	else
 	{
@@ -192,7 +251,10 @@ void ALetEmCookCharacter::ThrowProjectile()
 
 	if (HasAuthority())
 	{
-		Multicast_HandleProjectileThrownEffects();
+		if (CanThrowProjectile())
+		{			
+			Multicast_HandleProjectileThrownEffects();
+		}
 	}
 	else
 	{
@@ -263,32 +325,6 @@ void ALetEmCookCharacter::Multicast_HandleProjectileThrownEffects_Implementation
 			AnimInstance->Montage_Play(ThrowAnimation, ThrowAnimationRate);
 			AnimInstance->Montage_JumpToSection(ThrowSectionName, ThrowAnimation);
 		}
-	}
-}
-
-void ALetEmCookCharacter::Move(const FInputActionValue& Value)
-{
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
-	{
-		// add movement 
-		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
-		AddMovementInput(GetActorRightVector(), MovementVector.X);
-	}
-}
-
-void ALetEmCookCharacter::Look(const FInputActionValue& Value)
-{
-	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
-	{
-		// add yaw and pitch input to controller
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
 	}
 }
 
@@ -364,4 +400,23 @@ void ALetEmCookCharacter::HandleHandleHeldMeshVisibility()
 			ProjectileRepresentationMeshes[i]->GetProjectileMesh()->SetVisibility(i == CurrentProjectileIndex);
 		}
 	}
+}
+
+bool ALetEmCookCharacter::CanThrowProjectile(float* out_RealtimeSeconds)
+{
+	if (CurrentProjectileClass != nullptr)
+	{
+		const float RealtimeSeconds = UGameplayStatics::GetRealTimeSeconds(this);
+		const float SecondsElapsedSinceLastThrow = RealtimeSeconds - ProjectileCooldownMap[CurrentProjectileClass];
+
+		// Store the current real-time seconds in the out parameter if provided
+		if (out_RealtimeSeconds) 
+		{
+			*out_RealtimeSeconds = RealtimeSeconds;
+		}
+
+		return SecondsElapsedSinceLastThrow > UtensilProjectiles[CurrentProjectileIndex]->GetProjectileCooldown();
+	}
+
+	return false;
 }

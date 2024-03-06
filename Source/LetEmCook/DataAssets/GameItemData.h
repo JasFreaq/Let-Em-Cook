@@ -24,13 +24,10 @@ class LETEMCOOK_API UGameItemData : public UDataAsset
 	TSubclassOf<ALetEmCookProjectile> Projectile;
 
 	UPROPERTY(EditDefaultsOnly)
+	float ProjectileCooldown = 1.5f;
+
+	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AHeldProjectileMesh> HeldMesh;
-
-	UPROPERTY(EditDefaultsOnly)
-	FVector MeshRepresentationAttachmentLocation;
-
-	UPROPERTY(EditDefaultsOnly)
-	FRotator MeshRepresentationAttachmentRotation;
 
 public:
 
@@ -40,7 +37,5 @@ public:
 
 	TSubclassOf<AHeldProjectileMesh> GetHeldMesh() const { return HeldMesh; }
 
-	FVector GetMeshRepresentationAttachmentLocation() const { return MeshRepresentationAttachmentLocation; }
-
-	FRotator GetMeshRepresentationAttachmentRotation() const { return MeshRepresentationAttachmentRotation; }
+	float GetProjectileCooldown() const { return ProjectileCooldown; }
 };

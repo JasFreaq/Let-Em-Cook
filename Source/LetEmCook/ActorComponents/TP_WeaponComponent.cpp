@@ -116,7 +116,7 @@ void UTP_WeaponComponent::SpawnProjectile()
 				const ALetEmCookProjectile* Projectile = World->SpawnActor<ALetEmCookProjectile>(CurrentProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 				if (Projectile != nullptr)
 				{
-					Projectile->GetProjectileMovement()->Activate();
+					//Projectile->GetProjectileMovement()->Activate();
 
 					Multicast_HandleProjectileSpawnEffects();
 				}

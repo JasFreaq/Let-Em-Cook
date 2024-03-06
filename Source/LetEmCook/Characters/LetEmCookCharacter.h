@@ -103,7 +103,12 @@ private:
 
 	TArray<AHeldProjectileMesh*> ProjectileRepresentationMeshes;
 
+	TMap<TSubclassOf<ALetEmCookProjectile>, float> ProjectileCooldownMap;
+
 public:
+
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
 
 	/** Returns Mesh1P subobject **/
 	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
@@ -169,4 +174,6 @@ private:
 	void OnCurrentProjectileIndexChanged();
 	
 	void HandleHandleHeldMeshVisibility();
+
+	bool CanThrowProjectile(float* out_RealtimeSeconds = nullptr);
 };

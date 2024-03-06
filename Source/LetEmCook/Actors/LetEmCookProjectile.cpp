@@ -11,27 +11,19 @@ ALetEmCookProjectile::ALetEmCookProjectile()
 	CollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComp"));
 	CollisionComp->InitBoxExtent(FVector(14.0f, 6.0f, 60.0f));
 	CollisionComp->BodyInstance.SetCollisionProfileName("Projectile");
+	CollisionComp->SetSimulatePhysics(true);
 	CollisionComp->OnComponentHit.AddDynamic(this, &ALetEmCookProjectile::OnHit);		// set up a notification for when this component hits something blocking
-
+	
 	// Players can't walk on it
 	CollisionComp->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.f));
 	CollisionComp->CanCharacterStepUpOn = ECB_No;
-
+	
 	// Set as root component
 	RootComponent = CollisionComp;
 
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(CollisionComp);
 	Mesh->BodyInstance.SetCollisionProfileName("NoCollision");
-	
-	// Use a ProjectileMovementComponent to govern this projectile's movement
-	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
-	ProjectileMovement->UpdatedComponent = CollisionComp;
-	ProjectileMovement->InitialSpeed = 3000.f;
-	ProjectileMovement->MaxSpeed = 3000.f;
-	ProjectileMovement->bRotationFollowsVelocity = true;
-	ProjectileMovement->bShouldBounce = true;
-	ProjectileMovement->bAutoActivate = false;
 	
 	bReplicates = true;
 	AActor::SetReplicateMovement(true);
@@ -44,4 +36,9 @@ void ALetEmCookProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActo
 	{
 		Destroy();
 	}
+}
+
+void ALetEmCookProjectile::AddImpulseToProjectile(FVector ImpulseDirection)
+{
+	CollisionComp->AddImpulse(ImpulseDirection * ProjectileInitialVelocity);
 }
