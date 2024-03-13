@@ -10,6 +10,7 @@ class UBoxComponent;
 class UStaticMeshComponent;
 class UProjectileMovementComponent;
 class UStaticMesh;
+class UGameItemData;
 
 UCLASS(config=Game)
 class ALetEmCookProjectile : public AActor
@@ -18,6 +19,7 @@ class ALetEmCookProjectile : public AActor
 
 public:
 	ALetEmCookProjectile();
+
 
 private:
 
@@ -32,21 +34,27 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	float ProjectileInitialVelocity = 30000.f;
 
-protected:
-	/** Array of user data stored with the asset */
-	UPROPERTY(EditAnywhere, AdvancedDisplay, Instanced, Category = StaticMesh)
-	TArray<TObjectPtr<UAssetUserData>> AssetUserData;
-
 public:
 
-	/** called when projectile hits something */
+	// Function to be called when hit
 	UFUNCTION()
-	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	void OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit);
 
 	/** Returns CollisionComp subobject **/
 	UBoxComponent* GetCollisionComp() const { return CollisionComp; }
 
 	UStaticMesh* GetStaticMesh() const { return Mesh->GetStaticMesh(); }
 
-	void AddImpulseToProjectile(FVector ImpulseDirection);
+	void AddImpulseToProjectile(FVector ImpulseDirection) const;
+
+protected:
+
+	virtual void BeginPlay() override;
+
+private:
+
+	void SendCollisionEventToGameMode(AActor* SelfActor, AActor* OtherActor);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SendCollisionEventToGameMode(AActor* SelfActor, AActor* OtherActor);
 };

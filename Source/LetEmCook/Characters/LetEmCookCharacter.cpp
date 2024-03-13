@@ -11,6 +11,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
+#include "LetEmCook/GameModes/LetEmCookGameMode.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -109,13 +110,6 @@ void ALetEmCookCharacter::BeginPlay()
 	}
 }
 
-void ALetEmCookCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-
-}
-
 void ALetEmCookCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -195,7 +189,34 @@ void ALetEmCookCharacter::LaunchProjectile()
 				float RealtimeSeconds;
 				if (CanThrowProjectile(&RealtimeSeconds))
 				{
-					APlayerController* PlayerController = Cast<APlayerController>(GetController());
+					//ALetEmCookGameMode* GameMode = Cast<ALetEmCookGameMode>(World->GetAuthGameMode());
+					//if (GameMode != nullptr)
+					//{
+					//	ALetEmCookProjectile* Projectile = GameMode->GetProjectileFromPool(CurrentProjectileClass);
+					//	UE_LOG(LogTemp, Warning, TEXT("Projectile: %s"), *CurrentProjectileClass->GetName());
+					//	if (Projectile != nullptr)
+					//	{
+					//		ProjectileCooldownMap[CurrentProjectileClass] = RealtimeSeconds;
+
+					//		// Find the camera rotation
+					//		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+					//		const FRotator LaunchRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
+					//		// ThrowOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
+					//		const FVector LaunchLocation = GetActorLocation() + LaunchRotation.RotateVector(ThrowOffset);
+					//		
+					//		// Spawn the projectile at the muzzle
+					//		Projectile->SetActorLocation(LaunchLocation, false, nullptr, ETeleportType::ResetPhysics);
+					//		Projectile->SetActorRotation(LaunchRotation, ETeleportType::ResetPhysics);
+					//		//Projectile->SetActorHiddenInGame(false);
+					//		//Projectile->SetActorEnableCollision(true);
+					//		//Projectile->GetCollisionComp()->SetSimulatePhysics(true);
+
+					//		//// Set the projectile's initial velocity
+					//		//Projectile->AddImpulseToProjectile(LaunchRotation.Vector());
+					//	}
+					//}
+
+					const APlayerController* PlayerController = Cast<APlayerController>(GetController());
 					const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
 					// ThrowOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
 					const FVector SpawnLocation = GetActorLocation() + SpawnRotation.RotateVector(ThrowOffset);
@@ -205,7 +226,7 @@ void ALetEmCookCharacter::LaunchProjectile()
 					ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 
 					// Spawn the projectile at the muzzle
-					ALetEmCookProjectile* Projectile = World->SpawnActor<ALetEmCookProjectile>(CurrentProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+					const ALetEmCookProjectile* Projectile = World->SpawnActor<ALetEmCookProjectile>(CurrentProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 					if (Projectile != nullptr)
 					{
 						ProjectileCooldownMap[CurrentProjectileClass] = RealtimeSeconds;
@@ -415,7 +436,8 @@ bool ALetEmCookCharacter::CanThrowProjectile(float* out_RealtimeSeconds)
 			*out_RealtimeSeconds = RealtimeSeconds;
 		}
 
-		return SecondsElapsedSinceLastThrow > UtensilProjectiles[CurrentProjectileIndex]->GetProjectileCooldown();
+		return SecondsElapsedSinceLastThrow > UtensilProjectiles[CurrentProjectileIndex]->GetProjectileCooldown()
+			|| ProjectileCooldownMap[CurrentProjectileClass] == 0.f;
 	}
 
 	return false;
