@@ -22,7 +22,6 @@ void ALetEmCookGameMode::Tick(float DeltaSeconds)
 
 	if (HasAuthority())
 	{
-		int count = 0;
 		// Process the interaction queue
 		while (!CollisionEventsQueue.IsEmpty())
 		{
@@ -49,8 +48,6 @@ void ALetEmCookGameMode::Tick(float DeltaSeconds)
 					&& Event.ActorB->IsA(Interaction->GetItemA().GameItem->GetProjectile()))
 				{
 					RaisedInteraction = Interaction;
-					UE_LOG(LogTemp, Warning, TEXT("%d"), count);
-					count++;
 					break;
 				}
 				else
@@ -102,7 +99,7 @@ void ALetEmCookGameMode::Tick(float DeltaSeconds)
 			}
 		}
 
-		for (TObjectPtr<AActor> ProcessedActor : ProcessedActors)
+		for (const TObjectPtr<AActor> ProcessedActor : ProcessedActors)
 		{
 			ProcessedActor->Destroy();
 		}

@@ -115,6 +115,9 @@ public:
 
 	void LaunchProjectile();
 
+	UFUNCTION(BlueprintCallable)
+	float GetProjectileCooldownRatio(TSubclassOf<ALetEmCookProjectile> ProjectileClass) const;
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
@@ -171,6 +174,9 @@ private:
 	void OnCurrentProjectileIndexChanged();
 	
 	void HandleHandleHeldMeshVisibility();
+
+	UFUNCTION(Client, Reliable)
+	void Client_UpdateProjectileMap(TSubclassOf<ALetEmCookProjectile> ProjectileClass);
 
 	bool CanThrowProjectile(float* out_RealtimeSeconds = nullptr);
 };

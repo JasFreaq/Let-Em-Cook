@@ -11,7 +11,6 @@
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
-#include "LetEmCook/GameModes/LetEmCookGameMode.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -58,6 +57,8 @@ void ALetEmCookCharacter::BeginPlay()
 		}
 	}
 
+	//OnActorBeginOverlap.AddDynamic(this, &ALetEmCookCharacter::OnActorBeginOverlap);
+
 	int ProjectileClassesSize = UtensilProjectiles.Num();
 	if (ProjectileClassesSize > 0)
 	{
@@ -101,12 +102,9 @@ void ALetEmCookCharacter::BeginPlay()
 		ProjectileRepresentationMeshes[0]->GetProjectileMesh()->SetVisibility(true);
 	}
 
-	if (HasAuthority())
+	for (const TObjectPtr<UGameItemData> Utensil : UtensilProjectiles)
 	{
-		for (const TObjectPtr<UGameItemData> Utensil : UtensilProjectiles)
-		{
-			ProjectileCooldownMap.Add(Utensil->GetProjectile(), 0.f);
-		}
+		ProjectileCooldownMap.Add(Utensil->GetProjectile(), 0.f);
 	}
 }
 
@@ -230,6 +228,7 @@ void ALetEmCookCharacter::LaunchProjectile()
 					if (Projectile != nullptr)
 					{
 						ProjectileCooldownMap[CurrentProjectileClass] = RealtimeSeconds;
+						Client_UpdateProjectileMap(CurrentProjectileClass);
 
 						Projectile->AddImpulseToProjectile(SpawnRotation.Vector());
 					}
@@ -241,6 +240,25 @@ void ALetEmCookCharacter::LaunchProjectile()
 	{
 		Server_LaunchProjectile();
 	}
+}
+
+float ALetEmCookCharacter::GetProjectileCooldownRatio(TSubclassOf<ALetEmCookProjectile> ProjectileClass) const
+{
+	if (ProjectileCooldownMap.Contains(ProjectileClass))
+	{
+		const float Seconds = UGameplayStatics::GetRealTimeSeconds(this);
+		const float SecondsElapsed = Seconds - ProjectileCooldownMap[ProjectileClass];
+
+		for (int i = 0; i < UtensilProjectiles.Num(); i++)
+		{
+			if (UtensilProjectiles[i]->GetProjectile() == ProjectileClass)
+			{
+				return FMath::Clamp(SecondsElapsed / UtensilProjectiles[i]->GetProjectileCooldown(), 0.f, 1.f);
+			}
+		}
+	}
+
+	return 0.f;
 }
 
 void ALetEmCookCharacter::AimProjectile()
@@ -353,14 +371,14 @@ void ALetEmCookCharacter::SetProjectileToPrevious()
 {
 	if (HasAuthority())
 	{
-		int rangeSize = UtensilProjectiles.Num();
-		int clampedValue = (CurrentProjectileIndex - 1) % rangeSize;
-		if (clampedValue < 0)
+		int RangeSize = UtensilProjectiles.Num();
+		int ClampedValue = (CurrentProjectileIndex - 1) % RangeSize;
+		if (ClampedValue < 0)
 		{
-			clampedValue += rangeSize;
+			ClampedValue += RangeSize;
 		}
 
-		CurrentProjectileIndex = clampedValue;
+		CurrentProjectileIndex = ClampedValue;
 		SetProjectile();
 	}
 	else
@@ -378,14 +396,14 @@ void ALetEmCookCharacter::SetProjectileToNext()
 {
 	if (HasAuthority())
 	{
-		int rangeSize = UtensilProjectiles.Num();
-		int clampedValue = (CurrentProjectileIndex + 1) % rangeSize;
-		if (clampedValue < 0)
+		int RangeSize = UtensilProjectiles.Num();
+		int ClampedValue = (CurrentProjectileIndex + 1) % RangeSize;
+		if (ClampedValue < 0)
 		{
-			clampedValue += rangeSize;
+			ClampedValue += RangeSize;
 		}
 
-		CurrentProjectileIndex = clampedValue;
+		CurrentProjectileIndex = ClampedValue;
 		SetProjectile();
 	}
 	else
@@ -422,6 +440,12 @@ void ALetEmCookCharacter::HandleHandleHeldMeshVisibility()
 		}
 	}
 }
+
+void ALetEmCookCharacter::Client_UpdateProjectileMap_Implementation(TSubclassOf<ALetEmCookProjectile> ProjectileClass)
+{
+	ProjectileCooldownMap[ProjectileClass] = UGameplayStatics::GetRealTimeSeconds(this);
+}
+
 
 bool ALetEmCookCharacter::CanThrowProjectile(float* out_RealtimeSeconds)
 {
