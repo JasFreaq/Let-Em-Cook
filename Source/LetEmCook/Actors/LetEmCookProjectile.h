@@ -20,7 +20,6 @@ class ALetEmCookProjectile : public AActor
 public:
 	ALetEmCookProjectile();
 
-
 private:
 
 	/** Box collision component */
@@ -32,7 +31,10 @@ private:
 	TObjectPtr<UStaticMeshComponent> Mesh;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Projectile, meta = (AllowPrivateAccess = "true"))
-	float ProjectileInitialVelocity = 30000.f;
+	float ProjectileInitialVelocity = 2400.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	TObjectPtr<UGameItemData> GameItemData;
 
 public:
 
@@ -44,8 +46,12 @@ public:
 	UBoxComponent* GetCollisionComp() const { return CollisionComp; }
 
 	UStaticMesh* GetStaticMesh() const { return Mesh->GetStaticMesh(); }
+	
+	TObjectPtr<UGameItemData> GetGameItem() const { return GameItemData; }
 
 	void AddImpulseToProjectile(FVector ImpulseDirection) const;
+
+	void SetProjectileEnabled(bool bIsEnabled);
 
 protected:
 
@@ -57,4 +63,7 @@ private:
 
 	UFUNCTION(Server, Reliable)
 	void Server_SendCollisionEventToGameMode(AActor* SelfActor, AActor* OtherActor);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetProjectileEnabled(bool bIsEnabled);
 };

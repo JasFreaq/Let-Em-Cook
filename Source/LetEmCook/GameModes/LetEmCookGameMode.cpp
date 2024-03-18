@@ -108,7 +108,7 @@ void ALetEmCookGameMode::Tick(float DeltaSeconds)
 	}
 }
 
-void ALetEmCookGameMode::RaiseCollisionEvent(ALetEmCookProjectile* ActorA, ALetEmCookProjectile* ActorB)
+void ALetEmCookGameMode::RaiseCollisionEvent(AActor* ActorA, AActor* ActorB)
 {
 	if (HasAuthority())
 	{

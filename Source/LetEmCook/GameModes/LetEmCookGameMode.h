@@ -7,7 +7,6 @@
 #include "LetEmCookGameMode.generated.h"
 
 class UGameItemData;
-class ALetEmCookProjectile;
 class UInteractionData;
 
 USTRUCT()
@@ -46,7 +45,7 @@ private:
 public:
 	virtual void Tick(float DeltaSeconds) override;
 
-	void RaiseCollisionEvent(ALetEmCookProjectile* ActorA, ALetEmCookProjectile* ActorB);
+	void RaiseCollisionEvent(AActor* ActorA, AActor* ActorB);
 
 //private:
 //

@@ -4,11 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "IThrowTargetable.generated.h"
+#include "Interactable.generated.h"
+
+class UGameItemData;
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class UIThrowTargetable : public UInterface
+class UInteractable : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -16,10 +18,14 @@ class UIThrowTargetable : public UInterface
 /**
  * 
  */
-class LETEMCOOK_API IIThrowTargetable
+class LETEMCOOK_API IInteractable
 {
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
+
+	virtual TObjectPtr<UGameItemData> GetGameItem() const = 0;
+
+	virtual AActor* GetActor() = 0;
 };

@@ -27,7 +27,6 @@ struct FInteractionDataItem
 	EInteractionType InteractionType = EInteractionType::DestroyItem;
 };
 
-
 /**
  * 
  */

@@ -7,10 +7,12 @@
 #include "Components/CapsuleComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Blueprint/UserWidget.h"
 #include "Components/BoxComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
+#include "LetEmCook/PlayerControllers/LetEmCookPlayerController.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -36,6 +38,8 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 
+	Tags.Add(FName("Interactable"));
+
 	bReplicates = true;
 	SetReplicatingMovement(true);
 }
@@ -47,7 +51,7 @@ void ALetEmCookCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
-
+	
 	//Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -57,7 +61,8 @@ void ALetEmCookCharacter::BeginPlay()
 		}
 	}
 
-	//OnActorBeginOverlap.AddDynamic(this, &ALetEmCookCharacter::OnActorBeginOverlap);
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ALetEmCookCharacter::OnBeginOverlap);
+	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &ALetEmCookCharacter::OnEndOverlap);
 
 	int ProjectileClassesSize = UtensilProjectiles.Num();
 	if (ProjectileClassesSize > 0)
@@ -65,37 +70,9 @@ void ALetEmCookCharacter::BeginPlay()
 		for (int i = 0; i < ProjectileClassesSize; i++)
 		{
 			const UGameItemData* GameItem = UtensilProjectiles[i];
-			UWorld* const World = GetWorld();
 
-			if (World != nullptr)
-			{
-				//Set Spawn Collision Handling Override
-				FActorSpawnParameters ActorSpawnParams;
-				ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-				AHeldProjectileMesh* HeldMeshActor = World->SpawnActor<AHeldProjectileMesh>(GameItem->GetHeldMesh(), FVector::Zero(), FQuat::Identity.Rotator(), ActorSpawnParams);
-				if (HeldMeshActor != nullptr)
-				{
-					HeldMeshActor->SetOwner(this);
-
-					USceneComponent* HeldMeshRoot = HeldMeshActor->GetRootComponent();
-
-					if (IsLocallyControlled())
-					{
-						HeldMeshRoot->AttachToComponent(Mesh1P, FAttachmentTransformRules::SnapToTargetNotIncludingScale, HandSocketName); // Attach to first person hand socket
-						HeldMeshActor->GetProjectileMesh()->SetOnlyOwnerSee(true);
-					}
-					else
-					{
-						HeldMeshActor->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, HandSocketName); // Attach to third person hand socket
-						HeldMeshActor->GetProjectileMesh()->SetOwnerNoSee(true);
-					}
-
-					HeldMeshActor->GetProjectileMesh()->SetVisibility(false);
-
-					ProjectileRepresentationMeshes.Add(HeldMeshActor);
-				}
-			}
+			AHeldProjectileMesh* HeldMeshActor = InstantiateRepresentationMesh(GameItem->GetHeldMesh());
+			ProjectileRepresentationMeshes.Add(HeldMeshActor);
 		}
 
 		CurrentProjectileClass = UtensilProjectiles[0]->GetProjectile();
@@ -113,6 +90,9 @@ void ALetEmCookCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ALetEmCookCharacter, CurrentProjectileIndex);
+
+	DOREPLIFETIME(ALetEmCookCharacter, CurrentlyOverlappedIngredient);
+	DOREPLIFETIME(ALetEmCookCharacter, CurrentlyHeldIngredient);
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -139,6 +119,9 @@ void ALetEmCookCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		//Changing selected utensil
 		EnhancedInputComponent->BindAction(SelectPreviousAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::SetProjectileToPrevious);
 		EnhancedInputComponent->BindAction(SelectNextAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::SetProjectileToNext);
+
+		//Picking up ingredients
+		EnhancedInputComponent->BindAction(PickupAction, ETriggerEvent::Triggered, this, &ALetEmCookCharacter::PickupIngredient);
 	}
 }
 
@@ -172,6 +155,81 @@ void ALetEmCookCharacter::Look(const FInputActionValue& Value)
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Setup
+
+AHeldProjectileMesh* ALetEmCookCharacter::InstantiateRepresentationMesh(TSubclassOf<AHeldProjectileMesh> HeldMesh)
+{
+	UWorld* const World = GetWorld();
+
+	if (World == nullptr)
+	{
+		return nullptr;
+	}
+
+	//Set Spawn Collision Handling Override
+	FActorSpawnParameters ActorSpawnParams;
+	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AHeldProjectileMesh* HeldMeshActor = World->SpawnActor<AHeldProjectileMesh>(HeldMesh, FVector::Zero(), FQuat::Identity.Rotator(), ActorSpawnParams);
+	if (HeldMeshActor != nullptr)
+	{
+		HeldMeshActor->SetOwner(this);
+
+		USceneComponent* HeldMeshRoot = HeldMeshActor->GetRootComponent();
+
+		if (IsLocallyControlled())
+		{
+			HeldMeshRoot->AttachToComponent(Mesh1P, FAttachmentTransformRules::SnapToTargetNotIncludingScale, HandSocketName); // Attach to first person hand socket
+			HeldMeshActor->GetProjectileMesh()->SetOnlyOwnerSee(true);
+		}
+		else
+		{
+			HeldMeshActor->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, HandSocketName); // Attach to third person hand socket
+			HeldMeshActor->GetProjectileMesh()->SetOwnerNoSee(true);
+		}
+
+		HeldMeshActor->GetProjectileMesh()->SetVisibility(false);
+
+		return HeldMeshActor;
+	}
+
+	return nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Collision Handling
+
+void ALetEmCookCharacter::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor->Tags.Contains(FName("Interactable")))
+	{
+		ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
+		if (PlayerController != nullptr)
+		{
+			PlayerController->ShowPickupWidget();
+		}
+
+		SetOverlappingIngredient(OtherActor);
+	}
+}
+
+void ALetEmCookCharacter::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (OtherActor->Tags.Contains(FName("Interactable")))
+	{
+		ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
+		if (PlayerController != nullptr)
+		{
+			PlayerController->HidePickupWidget();
+		}
+
+		SetOverlappingIngredient(nullptr);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 // Projectile Handling
 
 void ALetEmCookCharacter::LaunchProjectile()
@@ -179,7 +237,20 @@ void ALetEmCookCharacter::LaunchProjectile()
 	if (HasAuthority())
 	{
 		// Try and fire a projectile
-		if (CurrentProjectileClass != nullptr)
+		if (CurrentlyHeldIngredient != nullptr)
+		{
+			const APlayerController* PlayerController = Cast<APlayerController>(GetController());
+			const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
+			const FVector SpawnLocation = GetActorLocation() + SpawnRotation.RotateVector(ThrowOffset);
+
+			CurrentlyHeldIngredient->SetActorLocation(SpawnLocation, false, nullptr, ETeleportType::ResetPhysics);
+			CurrentlyHeldIngredient->SetProjectileEnabled(true);
+			CurrentlyHeldIngredient->AddImpulseToProjectile(SpawnRotation.Vector());
+
+			CurrentlyHeldIngredient = nullptr;
+			OnPickedUpIngredient();
+		}
+		else if (CurrentProjectileClass != nullptr)
 		{
 			UWorld* const World = GetWorld();
 			if (World != nullptr)
@@ -421,22 +492,22 @@ void ALetEmCookCharacter::SetProjectile()
 {
 	CurrentProjectileClass = UtensilProjectiles[CurrentProjectileIndex]->GetProjectile();
 
-	HandleHandleHeldMeshVisibility();
+	HandleHeldMeshVisibility();
 }
 
 void ALetEmCookCharacter::OnCurrentProjectileIndexChanged()
 {
-	HandleHandleHeldMeshVisibility();
+	HandleHeldMeshVisibility();
 }
 
-void ALetEmCookCharacter::HandleHandleHeldMeshVisibility()
+void ALetEmCookCharacter::HandleHeldMeshVisibility(bool bHideAll)
 {
 	const int ProjectileClassesSize = UtensilProjectiles.Num();
 	if (ProjectileClassesSize > 0)
 	{
 		for (int i = 0; i < ProjectileClassesSize; i++)
 		{
-			ProjectileRepresentationMeshes[i]->GetProjectileMesh()->SetVisibility(i == CurrentProjectileIndex);
+			ProjectileRepresentationMeshes[i]->GetProjectileMesh()->SetVisibility(bHideAll ? false : i == CurrentProjectileIndex);
 		}
 	}
 }
@@ -445,7 +516,6 @@ void ALetEmCookCharacter::Client_UpdateProjectileMap_Implementation(TSubclassOf<
 {
 	ProjectileCooldownMap[ProjectileClass] = UGameplayStatics::GetRealTimeSeconds(this);
 }
-
 
 bool ALetEmCookCharacter::CanThrowProjectile(float* out_RealtimeSeconds)
 {
@@ -465,4 +535,79 @@ bool ALetEmCookCharacter::CanThrowProjectile(float* out_RealtimeSeconds)
 	}
 
 	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Pickup System
+
+void ALetEmCookCharacter::PickupIngredient()
+{
+	if (HasAuthority())
+	{
+		if (CurrentlyOverlappedIngredient != nullptr)
+		{
+			CurrentlyHeldIngredient = CurrentlyOverlappedIngredient;
+			CurrentlyOverlappedIngredient = nullptr;
+			CurrentlyHeldIngredient->SetProjectileEnabled(false);
+
+			OnPickedUpIngredient();
+		}
+	}
+	else
+	{
+		Server_PickupIngredient();
+	}
+}
+
+void ALetEmCookCharacter::SetOverlappingIngredient(AActor* Actor)
+{
+	if (HasAuthority())
+	{
+		if (Actor != nullptr)
+		{
+			CurrentlyOverlappedIngredient = Cast<ALetEmCookProjectile>(Actor);
+		}
+		else
+		{
+			CurrentlyOverlappedIngredient = nullptr;
+		}
+	}
+	else
+	{
+		Server_SetOverlappingIngredient(Actor);
+	}
+}
+
+void ALetEmCookCharacter::Server_PickupIngredient_Implementation()
+{
+	PickupIngredient();
+}
+
+void ALetEmCookCharacter::Server_SetOverlappingIngredient_Implementation(AActor* Actor)
+{
+	SetOverlappingIngredient(Actor);
+}
+
+void ALetEmCookCharacter::Multicast_HandleIngredientPickedEffects_Implementation()
+{
+	HandleHeldMeshVisibility(true);
+	UE_LOG(LogTemp, Warning, TEXT("Picked up ingredient: %s"), CurrentlyHeldIngredient == nullptr ? TEXT("Null") : TEXT("Not Null"));
+	/*HeldIngredientRepresentationMesh = InstantiateRepresentationMesh(CurrentlyHeldIngredient->GetGameItem()->GetHeldMesh());
+	HeldIngredientRepresentationMesh->GetProjectileMesh()->SetVisibility(true);*/
+}
+
+void ALetEmCookCharacter::OnPickedUpIngredient()
+{
+	if (CurrentlyHeldIngredient != nullptr)
+	{
+		HandleHeldMeshVisibility(true);
+	
+		HeldIngredientRepresentationMesh = InstantiateRepresentationMesh(CurrentlyHeldIngredient->GetGameItem()->GetHeldMesh());
+		HeldIngredientRepresentationMesh->GetProjectileMesh()->SetVisibility(true);
+	}
+	else if (HeldIngredientRepresentationMesh != nullptr)
+	{
+		HandleHeldMeshVisibility();
+		HeldIngredientRepresentationMesh->Destroy();
+	}
 }

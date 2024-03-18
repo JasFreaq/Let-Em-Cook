@@ -2,7 +2,6 @@
 
 #include "LetEmCookProjectile.h"
 #include "Components/BoxComponent.h"
-#include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/GameModes/LetEmCookGameMode.h"
 #include "GameplayTags/Classes/GameplayTagsManager.h"
 #include "GameplayTags/Classes/GameplayTagContainer.h"
@@ -31,7 +30,7 @@ ALetEmCookProjectile::ALetEmCookProjectile()
 	Mesh->BodyInstance.SetCollisionProfileName("NoCollision");
 	Mesh->CanCharacterStepUpOn = ECB_No;
 
-	Tags.Add(FName("Projectile"));
+	Tags.Add(FName("Interactable"));
 
 	bReplicates = true;
 	AActor::SetReplicateMovement(true);
@@ -46,7 +45,7 @@ void ALetEmCookProjectile::BeginPlay()
 
 void ALetEmCookProjectile::OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (OtherActor->Tags.Contains(FName("Projectile")))
+	if (OtherActor->Tags.Contains(FName("Interactable")))
 	{
 		SendCollisionEventToGameMode(SelfActor, OtherActor);
 	}
@@ -54,7 +53,12 @@ void ALetEmCookProjectile::OnHit(AActor* SelfActor, AActor* OtherActor, FVector 
 
 void ALetEmCookProjectile::AddImpulseToProjectile(FVector ImpulseDirection) const
 {
-	CollisionComp->AddImpulse(ImpulseDirection * ProjectileInitialVelocity);
+	CollisionComp->AddImpulse(ImpulseDirection * ProjectileInitialVelocity, NAME_None, true);
+}
+
+void ALetEmCookProjectile::SetProjectileEnabled(bool bIsEnabled)
+{
+	Multicast_SetProjectileEnabled(bIsEnabled);
 }
 
 void ALetEmCookProjectile::SendCollisionEventToGameMode(AActor* SelfActor, AActor* OtherActor)
@@ -64,12 +68,7 @@ void ALetEmCookProjectile::SendCollisionEventToGameMode(AActor* SelfActor, AActo
 		ALetEmCookGameMode* GameMode = GetWorld()->GetAuthGameMode<ALetEmCookGameMode>();
 		if (GameMode != nullptr)
 		{
-			ALetEmCookProjectile* OtherProjectile = Cast<ALetEmCookProjectile>(OtherActor);
-
-			if (OtherProjectile != nullptr)
-			{
-				GameMode->RaiseCollisionEvent(this, OtherProjectile);
-			}
+			GameMode->RaiseCollisionEvent(SelfActor, OtherActor);
 		}
 	}
 	else
@@ -81,4 +80,12 @@ void ALetEmCookProjectile::SendCollisionEventToGameMode(AActor* SelfActor, AActo
 void ALetEmCookProjectile::Server_SendCollisionEventToGameMode_Implementation(AActor* SelfActor, AActor* OtherActor)
 {
 	SendCollisionEventToGameMode(SelfActor, OtherActor);
+}
+
+void ALetEmCookProjectile::Multicast_SetProjectileEnabled_Implementation(bool bIsEnabled)
+{
+	Mesh->SetVisibility(bIsEnabled);
+	CollisionComp->SetSimulatePhysics(bIsEnabled);
+	//CollisionComp->SetCollisionEnabled(bIsEnabled ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+	SetActorEnableCollision(bIsEnabled);
 }

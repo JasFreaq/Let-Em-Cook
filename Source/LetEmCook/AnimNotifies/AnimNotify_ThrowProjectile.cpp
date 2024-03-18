@@ -15,7 +15,7 @@ void UAnimNotify_ThrowProjectile::Notify(USkeletalMeshComponent* MeshComp, UAnim
 	Super::Notify(MeshComp, Animation, EventReference);
 
 	ALetEmCookCharacter* Character = Cast<ALetEmCookCharacter>(MeshComp->GetOwner());
-	if (Character != nullptr)
+	if (Character != nullptr && Character->IsLocallyControlled())
 	{
 		Character->LaunchProjectile();
 	}
