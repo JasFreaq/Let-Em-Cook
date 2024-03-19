@@ -49,6 +49,10 @@ void ALetEmCookProjectile::OnHit(AActor* SelfActor, AActor* OtherActor, FVector 
 	{
 		SendCollisionEventToGameMode(SelfActor, OtherActor);
 	}
+	else
+	{
+		CollisionComp->ClearMoveIgnoreActors();
+	}
 }
 
 void ALetEmCookProjectile::AddImpulseToProjectile(FVector ImpulseDirection) const
@@ -85,7 +89,7 @@ void ALetEmCookProjectile::Server_SendCollisionEventToGameMode_Implementation(AA
 void ALetEmCookProjectile::Multicast_SetProjectileEnabled_Implementation(bool bIsEnabled)
 {
 	Mesh->SetVisibility(bIsEnabled);
-	CollisionComp->SetSimulatePhysics(bIsEnabled);
-	//CollisionComp->SetCollisionEnabled(bIsEnabled ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+
+	CollisionComp->SetSimulatePhysics(bIsEnabled);	
 	SetActorEnableCollision(bIsEnabled);
 }

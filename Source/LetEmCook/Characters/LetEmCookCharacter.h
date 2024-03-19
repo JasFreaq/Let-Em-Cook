@@ -139,7 +139,7 @@ public:
 
 	UFUNCTION()
 	void OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
+		
 	UFUNCTION(BlueprintCallable)
 	float GetProjectileCooldownRatio(TSubclassOf<ALetEmCookProjectile> ProjectileClass) const;
 
@@ -194,7 +194,9 @@ private:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_HandleProjectileThrowing();
-	
+
+	void GetProjectileSpawnLocationAndRotation(bool bUseCameraRotation, FVector& SpawnLocation, FRotator& SpawnRotation) const;
+
 	UFUNCTION(Server, Reliable)
 	void Server_SetProjectileToPrevious();
 	
@@ -219,6 +221,8 @@ private:
 
 	UFUNCTION()
 	void OnPickedUpIngredient();
+
+	void DropHeldIngredient(bool bUseCameraRotation, bool bLaunch);
 
 	UFUNCTION(Server, Reliable)
 	void Server_TakeDamage(float Damage);

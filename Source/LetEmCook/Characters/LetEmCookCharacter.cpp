@@ -106,6 +106,15 @@ void ALetEmCookCharacter::Tick(float DeltaTime)
 			}
 		}
 	}
+	else
+	{
+		FRotator SpawnRotation;
+		FVector SpawnLocation;
+		GetProjectileSpawnLocationAndRotation(false, SpawnLocation, SpawnRotation);
+
+		CurrentlyHeldIngredient->SetActorLocation(SpawnLocation, false, nullptr, ETeleportType::ResetPhysics);
+		CurrentlyHeldIngredient->SetActorRotation(SpawnRotation, ETeleportType::ResetPhysics);
+	}
 }
 
 void ALetEmCookCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -240,7 +249,12 @@ void ALetEmCookCharacter::OnBeginOverlap(UPrimitiveComponent* OverlappedComponen
 			ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
 			if (PlayerController != nullptr)
 			{
-				PlayerController->ShowPickupWidget();
+				ALetEmCookProjectile* OverlappingProjectile = Cast<ALetEmCookProjectile>(OtherActor);
+
+				if (OverlappingProjectile != nullptr)
+				{
+					PlayerController->ShowPickupWidget(OverlappingProjectile->GetGameItem()->GetAssetName());
+				}
 			}
 
 			SetOverlappingIngredient(OtherActor);
@@ -273,14 +287,7 @@ void ALetEmCookCharacter::LaunchProjectile()
 		// Try and fire a projectile
 		if (CurrentlyHeldIngredient != nullptr)
 		{
-			const APlayerController* PlayerController = Cast<APlayerController>(GetController());
-			const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
-			const FVector SpawnLocation = GetActorLocation() + SpawnRotation.RotateVector(ThrowOffset);
-
-			CurrentlyHeldIngredient->SetActorLocation(SpawnLocation, false, nullptr, ETeleportType::ResetPhysics);
-			CurrentlyHeldIngredient->SetActorRotation(SpawnRotation, ETeleportType::ResetPhysics);
-			CurrentlyHeldIngredient->SetProjectileEnabled(true);
-			CurrentlyHeldIngredient->AddImpulseToProjectile(SpawnRotation.Vector());
+			DropHeldIngredient(true, true);			
 
 			CurrentlyHeldIngredient = nullptr;
 			OnPickedUpIngredient();
@@ -320,17 +327,16 @@ void ALetEmCookCharacter::LaunchProjectile()
 					//	}
 					//}
 
-					const APlayerController* PlayerController = Cast<APlayerController>(GetController());
-					const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
-					// ThrowOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-					const FVector SpawnLocation = GetActorLocation() + SpawnRotation.RotateVector(ThrowOffset);
+					FRotator SpawnRotation;
+					FVector SpawnLocation;
+					GetProjectileSpawnLocationAndRotation(true, SpawnLocation, SpawnRotation);
 
 					//Set Spawn Collision Handling Override
 					FActorSpawnParameters ActorSpawnParams;
 					ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 
 					// Spawn the projectile at the muzzle
-					const ALetEmCookProjectile* Projectile = World->SpawnActor<ALetEmCookProjectile>(UtensilProjectiles[CurrentProjectileIndex]->GetProjectile(), SpawnLocation, SpawnRotation, ActorSpawnParams);
+					ALetEmCookProjectile* Projectile = World->SpawnActor<ALetEmCookProjectile>(UtensilProjectiles[CurrentProjectileIndex]->GetProjectile(), SpawnLocation, SpawnRotation, ActorSpawnParams);
 					if (Projectile != nullptr)
 					{
 						Multicast_HandleProjectileThrown(RealtimeSeconds);
@@ -472,6 +478,17 @@ void ALetEmCookCharacter::Multicast_HandleProjectileThrowing_Implementation()
 	}
 }
 
+void ALetEmCookCharacter::GetProjectileSpawnLocationAndRotation(bool bUseCameraRotation, FVector& SpawnLocation, FRotator& SpawnRotation) const
+{
+	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+	SpawnRotation = bUseCameraRotation ?
+		PlayerController->PlayerCameraManager->GetCameraRotation() : GetActorRotation();
+
+	// ThrowOffset is in camera space, so transform it to world space before offsetting from the character location to find the final spawn position
+	SpawnLocation = GetActorLocation() + SpawnRotation.RotateVector(ThrowOffset);
+}
+
 void ALetEmCookCharacter::SetProjectileToPrevious()
 {
 	if (CurrentlyHeldIngredient == nullptr)
@@ -542,7 +559,6 @@ void ALetEmCookCharacter::HandleHeldMeshVisibility(bool bHideAll)
 		{
 			if (i == CurrentProjectileIndex)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("CurrentProjectileIndex: %s"), bHideAll ? TEXT("True") : TEXT("False"));
 				ProjectileRepresentationMeshes[i]->GetProjectileMesh()->SetVisibility(bHideAll ? false : CanThrowProjectile());
 			}
 			else
@@ -588,6 +604,11 @@ void ALetEmCookCharacter::PickupIngredient()
 	{
 		if (CurrentlyOverlappedIngredient != nullptr)
 		{
+			if (CurrentlyHeldIngredient != nullptr)
+			{
+				DropHeldIngredient(false, false);
+			}
+
 			CurrentlyHeldIngredient = CurrentlyOverlappedIngredient;
 			CurrentlyOverlappedIngredient = nullptr;
 			CurrentlyHeldIngredient->SetProjectileEnabled(false);
@@ -632,6 +653,12 @@ void ALetEmCookCharacter::Server_SetOverlappingIngredient_Implementation(AActor*
 
 void ALetEmCookCharacter::OnPickedUpIngredient()
 {
+	if (HeldIngredientRepresentationMesh != nullptr)
+	{
+		HandleHeldMeshVisibility();
+		HeldIngredientRepresentationMesh->Destroy();
+	}
+
 	if (CurrentlyHeldIngredient != nullptr)
 	{
 		HandleHeldMeshVisibility(true);
@@ -639,10 +666,21 @@ void ALetEmCookCharacter::OnPickedUpIngredient()
 		HeldIngredientRepresentationMesh = InstantiateRepresentationMesh(CurrentlyHeldIngredient->GetGameItem()->GetHeldMesh());
 		HeldIngredientRepresentationMesh->GetProjectileMesh()->SetVisibility(true);
 	}
-	else if (HeldIngredientRepresentationMesh != nullptr)
+}
+
+void ALetEmCookCharacter::DropHeldIngredient(bool bUseCameraRotation, bool bLaunch)
+{
+	FRotator SpawnRotation;
+	FVector SpawnLocation;
+	GetProjectileSpawnLocationAndRotation(bUseCameraRotation, SpawnLocation, SpawnRotation);
+
+	CurrentlyHeldIngredient->SetActorLocation(SpawnLocation, false, nullptr, ETeleportType::ResetPhysics);
+	CurrentlyHeldIngredient->SetActorRotation(SpawnRotation, ETeleportType::ResetPhysics);
+	CurrentlyHeldIngredient->SetProjectileEnabled(true);
+
+	if (bLaunch)
 	{
-		HandleHeldMeshVisibility();
-		HeldIngredientRepresentationMesh->Destroy();
+		CurrentlyHeldIngredient->AddImpulseToProjectile(SpawnRotation.Vector());
 	}
 }
 

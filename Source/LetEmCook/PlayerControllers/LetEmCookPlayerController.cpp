@@ -4,19 +4,42 @@
 #include "LetEmCookPlayerController.h"
 #include "Blueprint/UserWidget.h"
 #include "Net/UnrealNetwork.h"
+#include "LetEmCook/UserWidgets/PickupNotifyWidget.h"
 
-void ALetEmCookPlayerController::ShowPickupWidget()
+void ALetEmCookPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (IsLocalPlayerController())
+	{
+		HUDWidgetInstance = CreateWidget(this, HUDWidget);
+		HUDWidgetInstance->AddToViewport();
+
+		PickupWidgetInstance = Cast<UPickupNotifyWidget>(CreateWidget(this, PickupWidget));
+	}
+}
+
+void ALetEmCookPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ALetEmCookPlayerController, HUDWidgetInstance);
+	DOREPLIFETIME(ALetEmCookPlayerController, PickupWidgetInstance);
+}
+
+void ALetEmCookPlayerController::ShowPickupWidget(FString ItemName)
 {
 	if (IsLocalPlayerController())
 	{
 		if (PickupWidgetInstance)
 		{
+			PickupWidgetInstance->SetPickupItemName(ItemName);
 			PickupWidgetInstance->AddToViewport();
 		}
 	}
 	else
 	{
-		Client_ShowPickupWidget();
+		Client_ShowPickupWidget(ItemName);
 	}
 }
 
@@ -35,26 +58,9 @@ void ALetEmCookPlayerController::HidePickupWidget()
 	}
 }
 
-void ALetEmCookPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void ALetEmCookPlayerController::Client_ShowPickupWidget_Implementation(const FString& ItemName)
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ALetEmCookPlayerController, PickupWidgetInstance);
-}
-
-void ALetEmCookPlayerController::BeginPlay()
-{
-	Super::BeginPlay();
-
-	if (IsLocalPlayerController()) 
-	{
-		PickupWidgetInstance = CreateWidget(this, PickupWidget);
-	}
-}
-
-void ALetEmCookPlayerController::Client_ShowPickupWidget_Implementation() 
-{
-	ShowPickupWidget();
+	ShowPickupWidget(ItemName);
 }
 
 void ALetEmCookPlayerController::Client_HidePickupWidget_Implementation() 
