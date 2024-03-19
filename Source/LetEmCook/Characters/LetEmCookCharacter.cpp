@@ -13,6 +13,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/PlayerControllers/LetEmCookPlayerController.h"
+#include "LetEmCook/ActorComponents/DamageComponent.h"
+#include "LetEmCook/ActorComponents/HealthComponent.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -37,6 +39,8 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	Mesh1P->CastShadow = false;
 	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
+
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 
 	Tags.Add(FName("Interactable"));
 
@@ -64,7 +68,7 @@ void ALetEmCookCharacter::BeginPlay()
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ALetEmCookCharacter::OnBeginOverlap);
 	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &ALetEmCookCharacter::OnEndOverlap);
 
-	int ProjectileClassesSize = UtensilProjectiles.Num();
+	const int ProjectileClassesSize = UtensilProjectiles.Num();
 	if (ProjectileClassesSize > 0)
 	{
 		for (int i = 0; i < ProjectileClassesSize; i++)
@@ -74,14 +78,33 @@ void ALetEmCookCharacter::BeginPlay()
 			AHeldProjectileMesh* HeldMeshActor = InstantiateRepresentationMesh(GameItem->GetHeldMesh());
 			ProjectileRepresentationMeshes.Add(HeldMeshActor);
 		}
-
-		CurrentProjectileClass = UtensilProjectiles[0]->GetProjectile();
+		
+		CurrentProjectileIndex = 0;
 		ProjectileRepresentationMeshes[0]->GetProjectileMesh()->SetVisibility(true);
 	}
 
 	for (const TObjectPtr<UGameItemData> Utensil : UtensilProjectiles)
 	{
 		ProjectileCooldownMap.Add(Utensil->GetProjectile(), 0.f);
+	}
+}
+
+void ALetEmCookCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (CurrentlyHeldIngredient == nullptr)
+	{
+		if (!ProjectileRepresentationMeshes[CurrentProjectileIndex]->GetProjectileMesh()->IsVisible())
+		{
+			const float Seconds = UGameplayStatics::GetRealTimeSeconds(this);
+			const float SecondsElapsed = Seconds - ProjectileCooldownMap[UtensilProjectiles[CurrentProjectileIndex]->GetProjectile()];
+
+			if (SecondsElapsed > UtensilProjectiles[CurrentProjectileIndex]->GetProjectileCooldown())
+			{
+				ProjectileRepresentationMeshes[CurrentProjectileIndex]->GetProjectileMesh()->SetVisibility(true);
+			}
+		}
 	}
 }
 
@@ -204,13 +227,24 @@ void ALetEmCookCharacter::OnBeginOverlap(UPrimitiveComponent* OverlappedComponen
 {
 	if (OtherActor->Tags.Contains(FName("Interactable")))
 	{
-		ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
-		if (PlayerController != nullptr)
+		const UDamageComponent* DamageComponent = OtherActor->FindComponentByClass<UDamageComponent>();
+		if (DamageComponent != nullptr)
 		{
-			PlayerController->ShowPickupWidget();
+			if (HasAuthority())
+			{
+				HealthComponent->ApplyDamage(DamageComponent->GetDamage());
+			}
 		}
+		else
+		{
+			ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
+			if (PlayerController != nullptr)
+			{
+				PlayerController->ShowPickupWidget();
+			}
 
-		SetOverlappingIngredient(OtherActor);
+			SetOverlappingIngredient(OtherActor);
+		}
 	}
 }
 
@@ -244,13 +278,14 @@ void ALetEmCookCharacter::LaunchProjectile()
 			const FVector SpawnLocation = GetActorLocation() + SpawnRotation.RotateVector(ThrowOffset);
 
 			CurrentlyHeldIngredient->SetActorLocation(SpawnLocation, false, nullptr, ETeleportType::ResetPhysics);
+			CurrentlyHeldIngredient->SetActorRotation(SpawnRotation, ETeleportType::ResetPhysics);
 			CurrentlyHeldIngredient->SetProjectileEnabled(true);
 			CurrentlyHeldIngredient->AddImpulseToProjectile(SpawnRotation.Vector());
 
 			CurrentlyHeldIngredient = nullptr;
 			OnPickedUpIngredient();
 		}
-		else if (CurrentProjectileClass != nullptr)
+		else if (UtensilProjectiles[CurrentProjectileIndex]->GetProjectile() != nullptr)
 		{
 			UWorld* const World = GetWorld();
 			if (World != nullptr)
@@ -295,11 +330,10 @@ void ALetEmCookCharacter::LaunchProjectile()
 					ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 
 					// Spawn the projectile at the muzzle
-					const ALetEmCookProjectile* Projectile = World->SpawnActor<ALetEmCookProjectile>(CurrentProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+					const ALetEmCookProjectile* Projectile = World->SpawnActor<ALetEmCookProjectile>(UtensilProjectiles[CurrentProjectileIndex]->GetProjectile(), SpawnLocation, SpawnRotation, ActorSpawnParams);
 					if (Projectile != nullptr)
 					{
-						ProjectileCooldownMap[CurrentProjectileClass] = RealtimeSeconds;
-						Client_UpdateProjectileMap(CurrentProjectileClass);
+						Multicast_HandleProjectileThrown(RealtimeSeconds);
 
 						Projectile->AddImpulseToProjectile(SpawnRotation.Vector());
 					}
@@ -341,9 +375,9 @@ void ALetEmCookCharacter::AimProjectile()
 
 	if (HasAuthority())
 	{
-		if(CanThrowProjectile())
+		if (CanThrowProjectile())
 		{
-			Multicast_HandleProjectileAimedEffects();
+			Multicast_HandleProjectileAimed();
 		}
 	}
 	else
@@ -363,7 +397,7 @@ void ALetEmCookCharacter::ThrowProjectile()
 	{
 		if (CanThrowProjectile())
 		{			
-			Multicast_HandleProjectileThrownEffects();
+			Multicast_HandleProjectileThrowing();
 		}
 	}
 	else
@@ -382,7 +416,7 @@ void ALetEmCookCharacter::Server_AimProjectile_Implementation()
 	AimProjectile();
 }
 
-void ALetEmCookCharacter::Multicast_HandleProjectileAimedEffects_Implementation()
+void ALetEmCookCharacter::Multicast_HandleProjectileAimed_Implementation()
 {
 	// Try and play a throwing animation if specified
 	if (ThrowAnimation != nullptr)
@@ -409,7 +443,7 @@ void ALetEmCookCharacter::Server_ThrowProjectile_Implementation()
 	ThrowProjectile();
 }
 
-void ALetEmCookCharacter::Multicast_HandleProjectileThrownEffects_Implementation()
+void ALetEmCookCharacter::Multicast_HandleProjectileThrowing_Implementation()
 {
 	// Try and play the sound if specified
 	if (ThrowSound != nullptr)
@@ -440,21 +474,24 @@ void ALetEmCookCharacter::Multicast_HandleProjectileThrownEffects_Implementation
 
 void ALetEmCookCharacter::SetProjectileToPrevious()
 {
-	if (HasAuthority())
+	if (CurrentlyHeldIngredient == nullptr)
 	{
-		int RangeSize = UtensilProjectiles.Num();
-		int ClampedValue = (CurrentProjectileIndex - 1) % RangeSize;
-		if (ClampedValue < 0)
+		if (HasAuthority())
 		{
-			ClampedValue += RangeSize;
-		}
+			int RangeSize = UtensilProjectiles.Num();
+			int ClampedValue = (CurrentProjectileIndex - 1) % RangeSize;
+			if (ClampedValue < 0)
+			{
+				ClampedValue += RangeSize;
+			}
 
-		CurrentProjectileIndex = ClampedValue;
-		SetProjectile();
-	}
-	else
-	{
-		Server_SetProjectileToPrevious();
+			CurrentProjectileIndex = ClampedValue;
+			HandleHeldMeshVisibility();
+		}
+		else
+		{
+			Server_SetProjectileToPrevious();
+		}
 	}
 }
 
@@ -465,34 +502,30 @@ void ALetEmCookCharacter::Server_SetProjectileToPrevious_Implementation()
 
 void ALetEmCookCharacter::SetProjectileToNext()
 {
-	if (HasAuthority())
+	if (CurrentlyHeldIngredient == nullptr)
 	{
-		int RangeSize = UtensilProjectiles.Num();
-		int ClampedValue = (CurrentProjectileIndex + 1) % RangeSize;
-		if (ClampedValue < 0)
+		if (HasAuthority())
 		{
-			ClampedValue += RangeSize;
-		}
+			int RangeSize = UtensilProjectiles.Num();
+			int ClampedValue = (CurrentProjectileIndex + 1) % RangeSize;
+			if (ClampedValue < 0)
+			{
+				ClampedValue += RangeSize;
+			}
 
-		CurrentProjectileIndex = ClampedValue;
-		SetProjectile();
-	}
-	else
-	{
-		Server_SetProjectileToNext();
+			CurrentProjectileIndex = ClampedValue;
+			HandleHeldMeshVisibility();
+		}
+		else
+		{
+			Server_SetProjectileToNext();
+		}
 	}
 }
 
 void ALetEmCookCharacter::Server_SetProjectileToNext_Implementation()
 {
 	SetProjectileToNext();
-}
-
-void ALetEmCookCharacter::SetProjectile()
-{
-	CurrentProjectileClass = UtensilProjectiles[CurrentProjectileIndex]->GetProjectile();
-
-	HandleHeldMeshVisibility();
 }
 
 void ALetEmCookCharacter::OnCurrentProjectileIndexChanged()
@@ -507,22 +540,31 @@ void ALetEmCookCharacter::HandleHeldMeshVisibility(bool bHideAll)
 	{
 		for (int i = 0; i < ProjectileClassesSize; i++)
 		{
-			ProjectileRepresentationMeshes[i]->GetProjectileMesh()->SetVisibility(bHideAll ? false : i == CurrentProjectileIndex);
+			if (i == CurrentProjectileIndex)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("CurrentProjectileIndex: %s"), bHideAll ? TEXT("True") : TEXT("False"));
+				ProjectileRepresentationMeshes[i]->GetProjectileMesh()->SetVisibility(bHideAll ? false : CanThrowProjectile());
+			}
+			else
+			{
+				ProjectileRepresentationMeshes[i]->GetProjectileMesh()->SetVisibility(false);
+			}
 		}
 	}
 }
 
-void ALetEmCookCharacter::Client_UpdateProjectileMap_Implementation(TSubclassOf<ALetEmCookProjectile> ProjectileClass)
+void ALetEmCookCharacter::Multicast_HandleProjectileThrown_Implementation(float Time)
 {
-	ProjectileCooldownMap[ProjectileClass] = UGameplayStatics::GetRealTimeSeconds(this);
+	ProjectileCooldownMap[UtensilProjectiles[CurrentProjectileIndex]->GetProjectile()] = Time;
+	ProjectileRepresentationMeshes[CurrentProjectileIndex]->GetProjectileMesh()->SetVisibility(false);
 }
 
 bool ALetEmCookCharacter::CanThrowProjectile(float* out_RealtimeSeconds)
 {
-	if (CurrentProjectileClass != nullptr)
+	if (UtensilProjectiles[CurrentProjectileIndex]->GetProjectile() != nullptr)
 	{
 		const float RealtimeSeconds = UGameplayStatics::GetRealTimeSeconds(this);
-		const float SecondsElapsedSinceLastThrow = RealtimeSeconds - ProjectileCooldownMap[CurrentProjectileClass];
+		const float SecondsElapsedSinceLastThrow = RealtimeSeconds - ProjectileCooldownMap[UtensilProjectiles[CurrentProjectileIndex]->GetProjectile()];
 
 		// Store the current real-time seconds in the out parameter if provided
 		if (out_RealtimeSeconds) 
@@ -531,7 +573,7 @@ bool ALetEmCookCharacter::CanThrowProjectile(float* out_RealtimeSeconds)
 		}
 
 		return SecondsElapsedSinceLastThrow > UtensilProjectiles[CurrentProjectileIndex]->GetProjectileCooldown()
-			|| ProjectileCooldownMap[CurrentProjectileClass] == 0.f;
+			|| ProjectileCooldownMap[UtensilProjectiles[CurrentProjectileIndex]->GetProjectile()] == 0.f;
 	}
 
 	return false;
@@ -588,14 +630,6 @@ void ALetEmCookCharacter::Server_SetOverlappingIngredient_Implementation(AActor*
 	SetOverlappingIngredient(Actor);
 }
 
-void ALetEmCookCharacter::Multicast_HandleIngredientPickedEffects_Implementation()
-{
-	HandleHeldMeshVisibility(true);
-	UE_LOG(LogTemp, Warning, TEXT("Picked up ingredient: %s"), CurrentlyHeldIngredient == nullptr ? TEXT("Null") : TEXT("Not Null"));
-	/*HeldIngredientRepresentationMesh = InstantiateRepresentationMesh(CurrentlyHeldIngredient->GetGameItem()->GetHeldMesh());
-	HeldIngredientRepresentationMesh->GetProjectileMesh()->SetVisibility(true);*/
-}
-
 void ALetEmCookCharacter::OnPickedUpIngredient()
 {
 	if (CurrentlyHeldIngredient != nullptr)
@@ -610,4 +644,24 @@ void ALetEmCookCharacter::OnPickedUpIngredient()
 		HandleHeldMeshVisibility();
 		HeldIngredientRepresentationMesh->Destroy();
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Health System
+
+void ALetEmCookCharacter::TakeDamage(float Damage)
+{
+	if (HasAuthority())
+	{
+		HealthComponent->ApplyDamage(Damage);
+	}
+	else
+	{
+		Server_TakeDamage(Damage);
+	}
+}
+
+void ALetEmCookCharacter::Server_TakeDamage_Implementation(float Damage)
+{
+	TakeDamage(Damage);
 }

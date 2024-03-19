@@ -19,6 +19,7 @@ class ALetEmCookProjectile;
 class UGameItemData;
 class AHeldProjectileMesh;
 class UUserWidget;
+class UHealthComponent;
 
 UCLASS(config=Game)
 class ALetEmCookCharacter : public ACharacter
@@ -38,6 +39,9 @@ private:
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USkeletalMeshComponent> Mesh1P;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UHealthComponent> HealthComponent;
 
 	/** AnimMontage Throw section name */
 	UPROPERTY(EditDefaultsOnly, Category = Mesh)
@@ -59,10 +63,11 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> LookAction;
 
-	/** Throw Input Action */
+	/** Aim Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> AimAction;/** Throw Input Action */
+	TObjectPtr<UInputAction> AimAction;
 
+	/** Throw Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ThrowAction;
 
@@ -73,6 +78,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> SelectNextAction;
 
+	/** Pickup Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> PickupAction;
 
@@ -102,8 +108,6 @@ private:
 
 	UPROPERTY(Replicated, ReplicatedUsing = OnCurrentProjectileIndexChanged)
 	int CurrentProjectileIndex;
-	
-	TSubclassOf<ALetEmCookProjectile> CurrentProjectileClass;
 
 	TArray<AHeldProjectileMesh*> ProjectileRepresentationMeshes;
 
@@ -125,6 +129,8 @@ public:
 
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+	virtual void Tick(float DeltaTime) override;
 
 	void LaunchProjectile();
 
@@ -167,9 +173,9 @@ private:
 
 	void SetProjectileToNext();
 
-	void SetProjectile();
-
 	void PickupIngredient();
+
+	void TakeDamage(float Damage);
 
 	void SetOverlappingIngredient(AActor* Actor);
 
@@ -184,10 +190,10 @@ private:
 	void Server_ThrowProjectile();
 
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_HandleProjectileAimedEffects();
+	void Multicast_HandleProjectileAimed();
 
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_HandleProjectileThrownEffects();
+	void Multicast_HandleProjectileThrowing();
 	
 	UFUNCTION(Server, Reliable)
 	void Server_SetProjectileToPrevious();
@@ -200,8 +206,8 @@ private:
 		
 	void HandleHeldMeshVisibility(bool bHideAll = false);
 
-	UFUNCTION(Client, Reliable)
-	void Client_UpdateProjectileMap(TSubclassOf<ALetEmCookProjectile> ProjectileClass);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_HandleProjectileThrown(float Time);
 
 	bool CanThrowProjectile(float* out_RealtimeSeconds = nullptr);
 
@@ -211,9 +217,9 @@ private:
 	UFUNCTION(Server, Reliable)
 	void Server_PickupIngredient();
 
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_HandleIngredientPickedEffects();
-
 	UFUNCTION()
 	void OnPickedUpIngredient();
+
+	UFUNCTION(Server, Reliable)
+	void Server_TakeDamage(float Damage);
 };
