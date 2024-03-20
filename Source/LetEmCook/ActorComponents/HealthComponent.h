@@ -7,7 +7,7 @@
 #include "HealthComponent.generated.h"
 
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class LETEMCOOK_API UHealthComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -26,7 +26,11 @@ private:
 public:
 	void ApplyDamage(float Damage);
 
+	UFUNCTION(BlueprintCallable)
 	float GetCurrentHealth() const { return CurrentHealth; }
+
+	UFUNCTION(BlueprintCallable)
+	float GetCurrentHealthRatio() const { return CurrentHealth / FullHealth; }
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
