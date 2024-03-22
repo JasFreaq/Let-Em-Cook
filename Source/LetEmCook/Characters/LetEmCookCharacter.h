@@ -20,6 +20,7 @@ class UGameItemData;
 class AHeldProjectileMesh;
 class UUserWidget;
 class UHealthComponent;
+class IInteractable;
 
 UCLASS(config=Game)
 class ALetEmCookCharacter : public ACharacter
@@ -40,7 +41,7 @@ private:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USkeletalMeshComponent> Mesh1P;
 
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Damage, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Damage, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UHealthComponent> HealthComponent;
 
 	/** AnimMontage Throw section name */
@@ -102,9 +103,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
 	FName ThrowSectionName = FName("Throw");
 
-	/** Gun muzzle's offset from the characters location */
+	/** Projectile's offset from the characters location */
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
-	FVector ThrowOffset;
+	FVector ThrowOffset = FVector(150.f, 0.f, 0.f);
+
+	UPROPERTY(EditDefaultsOnly, Category = Pickup)
+	float RaycastDistance = 150.f;
 
 	UPROPERTY(Replicated, ReplicatedUsing = OnCurrentProjectileIndexChanged)
 	int CurrentProjectileIndex;
@@ -114,7 +118,7 @@ private:
 	TMap<TSubclassOf<ALetEmCookProjectile>, float> ProjectileCooldownMap;
 
 	UPROPERTY(Replicated)
-	TObjectPtr<ALetEmCookProjectile> CurrentlyOverlappedIngredient;
+	TObjectPtr<IInteractable> CurrentlyOverlappedIngredient;
 
 	UPROPERTY(Replicated, ReplicatedUsing = OnPickedUpIngredient)
 	TObjectPtr<ALetEmCookProjectile> CurrentlyHeldIngredient;
@@ -129,16 +133,13 @@ public:
 
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
-
+	
 	virtual void Tick(float DeltaTime) override;
 
 	void LaunchProjectile();
 
 	UFUNCTION()
 	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 		
 	UFUNCTION(BlueprintCallable)
 	float GetProjectileCooldownRatio(TSubclassOf<ALetEmCookProjectile> ProjectileClass) const;
@@ -177,7 +178,7 @@ private:
 
 	void TakeDamage(float Damage);
 
-	void SetOverlappingIngredient(AActor* Actor);
+	void SetOverlappingInteractable(AActor* Actor);
 
 	/** Launch the actual Utensil/Ingredient */
 	UFUNCTION(Server, Reliable)

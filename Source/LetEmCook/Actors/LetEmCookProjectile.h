@@ -4,16 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "LetEmCook/Interfaces/Interactable.h"
 #include "LetEmCookProjectile.generated.h"
 
 class UBoxComponent;
 class UStaticMeshComponent;
-class UProjectileMovementComponent;
 class UStaticMesh;
 class UGameItemData;
 
 UCLASS(config=Game)
-class ALetEmCookProjectile : public AActor
+class ALetEmCookProjectile : public AActor, public IInteractable
 {
 	GENERATED_BODY()
 
@@ -47,7 +47,9 @@ public:
 
 	UStaticMesh* GetStaticMesh() const { return Mesh->GetStaticMesh(); }
 	
-	TObjectPtr<UGameItemData> GetGameItem() const { return GameItemData; }
+	virtual TObjectPtr<UGameItemData> GetGameItem() const override { return GameItemData; }
+
+	virtual ALetEmCookProjectile* GetProjectile() override { return this; }
 
 	void AddImpulseToProjectile(FVector ImpulseDirection) const;
 

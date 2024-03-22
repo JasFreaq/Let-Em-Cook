@@ -11,7 +11,7 @@ ALetEmCookProjectile::ALetEmCookProjectile()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
-	// Use a sphere as a simple collision representation
+	// Use a box as a simple collision representation
 	CollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComp"));
 	CollisionComp->InitBoxExtent(FVector(14.0f, 6.0f, 60.0f));
 	CollisionComp->BodyInstance.SetCollisionProfileName("Projectile");

@@ -7,6 +7,7 @@
 #include "Interactable.generated.h"
 
 class UGameItemData;
+class ALetEmCookProjectile;
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
@@ -27,5 +28,5 @@ public:
 
 	virtual TObjectPtr<UGameItemData> GetGameItem() const = 0;
 
-	virtual AActor* GetActor() = 0;
+	virtual ALetEmCookProjectile* GetProjectile() = 0;
 };

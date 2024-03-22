@@ -13,6 +13,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/PlayerControllers/LetEmCookPlayerController.h"
+#include "LetEmCook/Actors/ItemContainer.h"
+#include "LetEmCook/Interfaces/Interactable.h"
 #include "LetEmCook/ActorComponents/DamageComponent.h"
 #include "LetEmCook/ActorComponents/HealthComponent.h"
 
@@ -23,7 +25,7 @@
 ALetEmCookCharacter::ALetEmCookCharacter()
 {	
 	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
+	GetCapsuleComponent()->InitCapsuleSize(45.f, 96.0f);
 		
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
@@ -37,9 +39,14 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
-	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
+	Mesh1P->SetRelativeRotation(FRotator(0.f, -90.f, -15.f));
+	Mesh1P->SetRelativeLocation(FVector(30.f, 0.f, -130.f));
 
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+	if (HealthComponent != nullptr)
+	{
+		HealthComponent->RegisterComponent();
+	}
 
 	Tags.Add(FName("Interactable"));
 
@@ -65,7 +72,6 @@ void ALetEmCookCharacter::BeginPlay()
 	}
 
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ALetEmCookCharacter::OnBeginOverlap);
-	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &ALetEmCookCharacter::OnEndOverlap);
 
 	const int ProjectileClassesSize = UtensilProjectiles.Num();
 	if (ProjectileClassesSize > 0)
@@ -91,6 +97,66 @@ void ALetEmCookCharacter::BeginPlay()
 void ALetEmCookCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (Controller != nullptr)
+	{
+		// Get the player's viewpoint
+		FVector PlayerLocation;
+		FRotator PlayerRotation;
+		Controller->GetPlayerViewPoint(PlayerLocation, PlayerRotation);
+
+		// Calculate the end point of the raycast
+		FVector EndLocation = PlayerLocation + PlayerRotation.Vector() * RaycastDistance;
+
+		// Perform the raycast
+		FHitResult HitResult;
+		FCollisionQueryParams CollisionParams;
+		CollisionParams.AddIgnoredActor(this); // Ignore the actor performing the raycast
+
+		AActor* HitActor = nullptr;
+		bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, PlayerLocation, EndLocation, ECC_Visibility, CollisionParams);
+
+		if (bHit)
+		{
+			// Handle hit
+			HitActor = HitResult.GetActor();
+			if (HitActor != nullptr)
+			{
+				if (HitActor->Tags.Contains(FName("Interactable")))
+				{
+					if (const IInteractable* OverlappingInteractable = Cast<IInteractable>(HitActor); OverlappingInteractable != nullptr)
+					{
+						if (OverlappingInteractable->GetGameItem() != nullptr)
+						{
+							if (ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller); PlayerController != nullptr)
+							{
+								PlayerController->ShowPickupWidget(OverlappingInteractable->GetGameItem()->GetAssetName());
+							}
+						}
+						else
+						{
+							UE_LOG(LogTemp, Error, TEXT("Overlapping %s does not have a GameItemData asset assigned."), *HitActor->GetName());
+						}
+
+						SetOverlappingInteractable(HitActor);
+					}
+				}
+			}
+		}
+		
+		if (HitActor == nullptr)
+		{
+			if (CurrentlyOverlappedIngredient != nullptr)
+			{
+				if (ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller); PlayerController != nullptr)
+				{
+					PlayerController->HidePickupWidget();
+				}
+
+				SetOverlappingInteractable(nullptr);
+			}
+		}
+	}
 
 	if (CurrentlyHeldIngredient == nullptr)
 	{
@@ -243,36 +309,23 @@ void ALetEmCookCharacter::OnBeginOverlap(UPrimitiveComponent* OverlappedComponen
 				HealthComponent->ApplyDamage(DamageComponent->GetDamage());
 			}
 		}
-		else
+		else if (const IInteractable* OverlappingInteractable = Cast<IInteractable>(OtherActor); OverlappingInteractable != nullptr)
 		{
-			ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
-			if (PlayerController != nullptr)
+			if (OverlappingInteractable->GetGameItem() != nullptr)
 			{
-				ALetEmCookProjectile* OverlappingProjectile = Cast<ALetEmCookProjectile>(OtherActor);
-
-				if (OverlappingProjectile != nullptr)
+				ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
+				if (PlayerController != nullptr)
 				{
-					PlayerController->ShowPickupWidget(OverlappingProjectile->GetGameItem()->GetAssetName());
+					PlayerController->ShowPickupWidget(OverlappingInteractable->GetGameItem()->GetAssetName());
 				}
 			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("Overlapping %s does not have a GameItemData asset assigned."), *OtherActor->GetName());
+			}
 
-			SetOverlappingIngredient(OtherActor);
+			SetOverlappingInteractable(OtherActor);
 		}
-	}
-}
-
-void ALetEmCookCharacter::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	if (OtherActor->Tags.Contains(FName("Interactable")))
-	{
-		ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
-		if (PlayerController != nullptr)
-		{
-			PlayerController->HidePickupWidget();
-		}
-
-		SetOverlappingIngredient(nullptr);
 	}
 }
 
@@ -293,8 +346,7 @@ void ALetEmCookCharacter::LaunchProjectile()
 		}
 		else if (UtensilProjectiles[CurrentProjectileIndex]->GetProjectile() != nullptr)
 		{
-			UWorld* const World = GetWorld();
-			if (World != nullptr)
+			if (UWorld* const World = GetWorld(); World != nullptr)
 			{
 				float RealtimeSeconds;
 				if (CanThrowProjectile(&RealtimeSeconds))
@@ -603,16 +655,19 @@ void ALetEmCookCharacter::PickupIngredient()
 	{
 		if (CurrentlyOverlappedIngredient != nullptr)
 		{
-			if (CurrentlyHeldIngredient != nullptr)
+			if (ALetEmCookProjectile* ProjectileToHold = CurrentlyOverlappedIngredient->GetProjectile(); ProjectileToHold != nullptr)
 			{
-				DropHeldIngredient(false, false);
+				if (CurrentlyHeldIngredient != nullptr)
+				{
+					DropHeldIngredient(false, false);
+				}
+
+				CurrentlyHeldIngredient = ProjectileToHold;
+				CurrentlyOverlappedIngredient = nullptr;
+				CurrentlyHeldIngredient->SetProjectileEnabled(false);
+
+				OnPickedUpIngredient();
 			}
-
-			CurrentlyHeldIngredient = CurrentlyOverlappedIngredient;
-			CurrentlyOverlappedIngredient = nullptr;
-			CurrentlyHeldIngredient->SetProjectileEnabled(false);
-
-			OnPickedUpIngredient();
 		}
 	}
 	else
@@ -621,13 +676,13 @@ void ALetEmCookCharacter::PickupIngredient()
 	}
 }
 
-void ALetEmCookCharacter::SetOverlappingIngredient(AActor* Actor)
+void ALetEmCookCharacter::SetOverlappingInteractable(AActor* Actor)
 {
 	if (HasAuthority())
 	{
 		if (Actor != nullptr)
 		{
-			CurrentlyOverlappedIngredient = Cast<ALetEmCookProjectile>(Actor);
+			CurrentlyOverlappedIngredient = Cast<IInteractable>(Actor);
 		}
 		else
 		{
@@ -647,7 +702,7 @@ void ALetEmCookCharacter::Server_PickupIngredient_Implementation()
 
 void ALetEmCookCharacter::Server_SetOverlappingIngredient_Implementation(AActor* Actor)
 {
-	SetOverlappingIngredient(Actor);
+	SetOverlappingInteractable(Actor);
 }
 
 void ALetEmCookCharacter::OnPickedUpIngredient()
@@ -657,13 +712,14 @@ void ALetEmCookCharacter::OnPickedUpIngredient()
 		HandleHeldMeshVisibility();
 		HeldIngredientRepresentationMesh->Destroy();
 	}
-
+	
 	if (CurrentlyHeldIngredient != nullptr)
 	{
 		HandleHeldMeshVisibility(true);
-	
+
 		HeldIngredientRepresentationMesh = InstantiateRepresentationMesh(CurrentlyHeldIngredient->GetGameItem()->GetHeldMesh());
 		HeldIngredientRepresentationMesh->GetProjectileMesh()->SetVisibility(true);
+
 	}
 }
 
