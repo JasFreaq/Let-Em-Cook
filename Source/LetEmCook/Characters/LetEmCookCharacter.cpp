@@ -642,18 +642,21 @@ void ALetEmCookCharacter::PickupIngredient()
 	{
 		if (CurrentlyOverlappedIngredient != nullptr)
 		{
-			if (ALetEmCookProjectile* ProjectileToHold = CurrentlyOverlappedIngredient->GetProjectile(); ProjectileToHold != nullptr)
+			if (IInteractable* Interactable = Cast<IInteractable>(CurrentlyOverlappedIngredient); Interactable != nullptr)
 			{
-				if (CurrentlyHeldIngredient != nullptr)
+				if (ALetEmCookProjectile* ProjectileToHold = Interactable->GetProjectile(); ProjectileToHold != nullptr)
 				{
-					DropHeldIngredient(false, false);
+					if (CurrentlyHeldIngredient != nullptr)
+					{
+						DropHeldIngredient(false, false);
+					}
+
+					CurrentlyHeldIngredient = ProjectileToHold;
+					CurrentlyOverlappedIngredient = nullptr;
+					CurrentlyHeldIngredient->SetProjectileEnabled(false);
+
+					OnPickedUpIngredient();
 				}
-
-				CurrentlyHeldIngredient = ProjectileToHold;
-				CurrentlyOverlappedIngredient = nullptr;
-				CurrentlyHeldIngredient->SetProjectileEnabled(false);
-
-				OnPickedUpIngredient();
 			}
 		}
 	}
@@ -669,7 +672,10 @@ void ALetEmCookCharacter::SetOverlappingInteractable(AActor* Actor)
 	{
 		if (Actor != nullptr)
 		{
-			CurrentlyOverlappedIngredient = Cast<IInteractable>(Actor);
+			if (UKismetSystemLibrary::DoesImplementInterface(Actor, UInteractable::StaticClass()))
+			{
+				CurrentlyOverlappedIngredient = Actor;
+			}
 		}
 		else
 		{

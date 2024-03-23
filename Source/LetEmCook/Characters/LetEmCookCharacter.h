@@ -20,7 +20,6 @@ class UGameItemData;
 class AHeldProjectileMesh;
 class UUserWidget;
 class UHealthComponent;
-class IInteractable;
 
 UCLASS(config=Game)
 class ALetEmCookCharacter : public ACharacter
@@ -118,7 +117,7 @@ private:
 	TMap<TSubclassOf<ALetEmCookProjectile>, float> ProjectileCooldownMap;
 
 	UPROPERTY(Replicated)
-	TObjectPtr<IInteractable> CurrentlyOverlappedIngredient;
+	TObjectPtr<AActor> CurrentlyOverlappedIngredient;
 
 	UPROPERTY(Replicated, ReplicatedUsing = OnPickedUpIngredient)
 	TObjectPtr<ALetEmCookProjectile> CurrentlyHeldIngredient;
