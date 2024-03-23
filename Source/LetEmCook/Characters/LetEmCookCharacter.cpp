@@ -9,6 +9,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/BoxComponent.h"
+#include "Engine/DamageEvents.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
@@ -304,27 +305,13 @@ void ALetEmCookCharacter::OnBeginOverlap(UPrimitiveComponent* OverlappedComponen
 		const UDamageComponent* DamageComponent = OtherActor->FindComponentByClass<UDamageComponent>();
 		if (DamageComponent != nullptr)
 		{
-			if (HasAuthority())
+			if (IsLocallyControlled())
 			{
-				HealthComponent->ApplyDamage(DamageComponent->GetDamage());
-			}
-		}
-		else if (const IInteractable* OverlappingInteractable = Cast<IInteractable>(OtherActor); OverlappingInteractable != nullptr)
-		{
-			if (OverlappingInteractable->GetGameItem() != nullptr)
-			{
-				ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
-				if (PlayerController != nullptr)
-				{
-					PlayerController->ShowPickupWidget(OverlappingInteractable->GetGameItem()->GetAssetName());
-				}
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Overlapping %s does not have a GameItemData asset assigned."), *OtherActor->GetName());
-			}
+				FDamageEvent DamageEvent;
+				TakeDamage(DamageComponent->GetDamage(), DamageEvent, nullptr, OtherActor);
 
-			SetOverlappingInteractable(OtherActor);
+				
+			}
 		}
 	}
 }
@@ -742,19 +729,24 @@ void ALetEmCookCharacter::DropHeldIngredient(bool bUseCameraRotation, bool bLaun
 //////////////////////////////////////////////////////////////////////////
 // Health System
 
-void ALetEmCookCharacter::TakeDamage(float Damage)
+float ALetEmCookCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator,
+	AActor* DamageCauser)
 {
 	if (HasAuthority())
 	{
-		HealthComponent->ApplyDamage(Damage);
+		HealthComponent->ApplyDamage(DamageAmount);
+
+		DamageCauser->Destroy();
 	}
 	else
 	{
-		Server_TakeDamage(Damage);
+		Server_TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	}
+
+	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 }
 
-void ALetEmCookCharacter::Server_TakeDamage_Implementation(float Damage)
+void ALetEmCookCharacter::Server_TakeDamage_Implementation(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	TakeDamage(Damage);
+	TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 }

@@ -175,8 +175,8 @@ private:
 	void SetProjectileToNext();
 
 	void PickupIngredient();
-
-	void TakeDamage(float Damage);
+	
+	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	void SetOverlappingInteractable(AActor* Actor);
 
@@ -226,5 +226,5 @@ private:
 	void DropHeldIngredient(bool bUseCameraRotation, bool bLaunch);
 
 	UFUNCTION(Server, Reliable)
-	void Server_TakeDamage(float Damage);
+	void Server_TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser);
 };
