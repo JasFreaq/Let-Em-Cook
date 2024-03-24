@@ -9,7 +9,6 @@
 
 class UBoxComponent;
 class UStaticMeshComponent;
-class UStaticMesh;
 class UGameItemData;
 
 UCLASS()
@@ -38,8 +37,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Items)
 	float ItemCooldown = 20.f;
-
-	int ContainerCapacity;
 
 	TQueue<float> CooldownTimestamps;
 

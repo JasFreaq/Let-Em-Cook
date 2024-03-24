@@ -88,7 +88,7 @@ void ALetEmCookProjectile::Server_SendCollisionEventToGameMode_Implementation(AA
 
 void ALetEmCookProjectile::Multicast_SetProjectileEnabled_Implementation(bool bIsEnabled)
 {
-	Mesh->SetVisibility(bIsEnabled);
+	Mesh->SetVisibility(bIsEnabled, true);
 
 	CollisionComp->SetSimulatePhysics(bIsEnabled);	
 	SetActorEnableCollision(bIsEnabled);

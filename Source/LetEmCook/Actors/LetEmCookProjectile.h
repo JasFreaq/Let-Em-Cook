@@ -9,7 +9,6 @@
 
 class UBoxComponent;
 class UStaticMeshComponent;
-class UStaticMesh;
 class UGameItemData;
 
 UCLASS(config=Game)
@@ -45,7 +44,7 @@ public:
 	/** Returns CollisionComp subobject **/
 	UBoxComponent* GetCollisionComp() const { return CollisionComp; }
 
-	UStaticMesh* GetStaticMesh() const { return Mesh->GetStaticMesh(); }
+	UStaticMeshComponent* GetMesh() const { return Mesh; }
 	
 	virtual TObjectPtr<UGameItemData> GetGameItem() const override { return GameItemData; }
 

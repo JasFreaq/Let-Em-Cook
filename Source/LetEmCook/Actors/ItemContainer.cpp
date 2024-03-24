@@ -40,9 +40,8 @@ AItemContainer::AItemContainer()
 void AItemContainer::BeginPlay()
 {
 	Super::BeginPlay();
-
-	ContainerCapacity = ItemMeshes.Num();
-	CurrentContainerAmount = ContainerCapacity;
+	
+	CurrentContainerAmount = ItemMeshes.Num();
 }
 
 // Called every frame

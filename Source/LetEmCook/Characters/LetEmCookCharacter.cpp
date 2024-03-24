@@ -14,7 +14,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/PlayerControllers/LetEmCookPlayerController.h"
-#include "LetEmCook/Actors/ItemContainer.h"
 #include "LetEmCook/Interfaces/Interactable.h"
 #include "LetEmCook/ActorComponents/DamageComponent.h"
 #include "LetEmCook/ActorComponents/HealthComponent.h"
@@ -113,7 +112,7 @@ void ALetEmCookCharacter::Tick(float DeltaTime)
 		FHitResult HitResult;
 		FCollisionQueryParams CollisionParams;
 		CollisionParams.AddIgnoredActor(this); // Ignore the actor performing the raycast
-
+		
 		AActor* HitActor = nullptr;
 		bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, PlayerLocation, EndLocation, ECC_Visibility, CollisionParams);
 
@@ -136,7 +135,7 @@ void ALetEmCookCharacter::Tick(float DeltaTime)
 						}
 						else
 						{
-							UE_LOG(LogTemp, Error, TEXT("Overlapping %s does not have a GameItemData asset assigned."), *HitActor->GetName());
+							UE_LOG(LogTemp, Warning, TEXT("Overlapping %s does not have a GameItemData asset assigned."), *HitActor->GetName());
 						}
 
 						SetOverlappingInteractable(HitActor);
@@ -309,8 +308,6 @@ void ALetEmCookCharacter::OnBeginOverlap(UPrimitiveComponent* OverlappedComponen
 			{
 				FDamageEvent DamageEvent;
 				TakeDamage(DamageComponent->GetDamage(), DamageEvent, nullptr, OtherActor);
-
-				
 			}
 		}
 	}
@@ -711,7 +708,7 @@ void ALetEmCookCharacter::OnPickedUpIngredient()
 		HandleHeldMeshVisibility(true);
 
 		HeldIngredientRepresentationMesh = InstantiateRepresentationMesh(CurrentlyHeldIngredient->GetGameItem()->GetHeldMesh());
-		HeldIngredientRepresentationMesh->GetProjectileMesh()->SetVisibility(true);
+		HeldIngredientRepresentationMesh->GetProjectileMesh()->SetVisibility(true, true);
 
 	}
 }
