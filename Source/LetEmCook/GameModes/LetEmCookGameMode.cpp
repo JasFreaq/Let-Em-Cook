@@ -36,16 +36,16 @@ void ALetEmCookGameMode::Tick(float DeltaSeconds)
 			TObjectPtr<UInteractionData> RaisedInteraction;
 			for (const TObjectPtr<UInteractionData> Interaction : Interactions)
 			{
-				if (Interaction->GetItemA().GameItem == nullptr || Interaction->GetItemB().GameItem == nullptr)
+				if (Interaction->GetItemA() == nullptr || Interaction->GetItemB() == nullptr)
 				{
 					UE_LOG(LogTemp, Error, TEXT("Missing references in %s"), *Interaction->GetName());
 					continue;
 				}
 
-				if ((Event.ActorA->IsA(Interaction->GetItemA().GameItem->GetProjectile())
-					&& Event.ActorB->IsA(Interaction->GetItemB().GameItem->GetProjectile()))
-					|| Event.ActorA->IsA(Interaction->GetItemB().GameItem->GetProjectile())
-					&& Event.ActorB->IsA(Interaction->GetItemA().GameItem->GetProjectile()))
+				if ((Event.ActorA->IsA(Interaction->GetItemA()->GetProjectile())
+					&& Event.ActorB->IsA(Interaction->GetItemB()->GetProjectile()))
+					|| Event.ActorA->IsA(Interaction->GetItemB()->GetProjectile())
+					&& Event.ActorB->IsA(Interaction->GetItemA()->GetProjectile()))
 				{
 					RaisedInteraction = Interaction;
 					break;
@@ -58,43 +58,21 @@ void ALetEmCookGameMode::Tick(float DeltaSeconds)
 
 			if (RaisedInteraction != nullptr)
 			{
-				if (RaisedInteraction->GetItemA().InteractionType == RaisedInteraction->GetItemB().InteractionType)
+				if (RaisedInteraction->GetResultItem() != nullptr)
 				{
-					UE_LOG(LogTemp, Error, TEXT("Same Interaction Type set in %s"), *RaisedInteraction->GetName());
+					FVector SpawnLocation = (Event.ActorA->GetActorLocation() + Event.ActorB->GetActorLocation()) / 2;
+
+					FActorSpawnParameters SpawnParams;
+					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+					GetWorld()->SpawnActor<AActor>(RaisedInteraction->GetResultItem()->GetProjectile(), SpawnLocation, FQuat::Identity.Rotator(), SpawnParams);
+
+					ProcessedActors.Add(Event.ActorA);
+					ProcessedActors.Add(Event.ActorB);
 				}
 				else
 				{
-					AActor* ActorToDestroy;
-					AActor* ActorToReplace;
-					if (RaisedInteraction->GetItemA().InteractionType == EInteractionType::DestroyItem)
-					{
-						ActorToDestroy = Event.ActorA;
-						ActorToReplace = Event.ActorB;
-					}
-					else
-					{
-						ActorToDestroy = Event.ActorB;
-						ActorToReplace = Event.ActorA;
-					}
-
-					if (RaisedInteraction->GetResultItem() != nullptr)
-					{
-						FActorSpawnParameters SpawnParams;
-						SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-						FTransform SpawnTransform = ActorToReplace->GetActorTransform();
-						SpawnTransform.SetLocation(ActorToReplace->GetActorLocation());
-						SpawnTransform.SetRotation(ActorToReplace->GetActorQuat());
-
-						GetWorld()->SpawnActor<AActor>(RaisedInteraction->GetResultItem()->GetProjectile(), SpawnTransform, SpawnParams);
-
-						ProcessedActors.Add(ActorToDestroy);
-						ProcessedActors.Add(ActorToReplace);
-					}
-					else
-					{
-						UE_LOG(LogTemp, Error, TEXT("No Result Item set in %s"), *RaisedInteraction->GetName());
-					}
+					UE_LOG(LogTemp, Error, TEXT("No Result Item set in %s"), *RaisedInteraction->GetName());
 				}
 			}
 		}
