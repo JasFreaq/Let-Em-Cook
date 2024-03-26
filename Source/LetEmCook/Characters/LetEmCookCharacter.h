@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCookCharacter.generated.h"
 
 class UInputComponent;
@@ -132,6 +133,9 @@ public:
 
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+	UFUNCTION(BlueprintCallable)
+	TSubclassOf<ALetEmCookProjectile> GetCurrentProjectileClass() const { return UtensilProjectiles[CurrentProjectileIndex]->GetProjectile(); }
 	
 	virtual void Tick(float DeltaTime) override;
 
