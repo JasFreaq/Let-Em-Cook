@@ -39,11 +39,13 @@ private:
 	UPROPERTY(Replicated)
 	TObjectPtr<ALetEmCookProjectile> CurrentlyProcessingItem;
 
+	UPROPERTY(Replicated)
 	TObjectPtr<UTransmuteData> CurrentTransmutation;
+	
+	UPROPERTY(Replicated)
+	float CurrentProcessStartTime = 0;
 
 	TObjectPtr<UStaticMeshComponent> ItemMesh;
-
-	float CurrentProcessStartTime = 0;
 
 protected:
 	// Called when the game starts or when spawned
@@ -60,6 +62,12 @@ public:
 	virtual TObjectPtr<UGameItemData> GetGameItem() const override;
 
 	virtual ALetEmCookProjectile* GetProjectile() override;
+
+	UFUNCTION(BlueprintCallable)
+	bool IsCurrentlyTransmuting() const;
+
+	UFUNCTION(BlueprintCallable)
+	float GetProcessTimeRemainingRatio() const;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 

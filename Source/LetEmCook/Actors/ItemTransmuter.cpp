@@ -144,11 +144,30 @@ ALetEmCookProjectile* AItemTransmuter::GetProjectile()
 	return nullptr;
 }
 
+bool AItemTransmuter::IsCurrentlyTransmuting() const
+{
+	return CurrentlyProcessingItem != nullptr;
+}
+
+float AItemTransmuter::GetProcessTimeRemainingRatio() const
+{
+	if (CurrentlyProcessingItem != nullptr)
+	{
+		const float CurrentTime = GetWorld()->GetTimeSeconds();
+
+		return (CurrentTime - CurrentProcessStartTime) / CurrentTransmutation->GetTransmuteTime();
+	}
+
+	return 0.f;
+}
+
 void AItemTransmuter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AItemTransmuter, CurrentlyProcessingItem);
+	DOREPLIFETIME(AItemTransmuter, CurrentTransmutation);
+	DOREPLIFETIME(AItemTransmuter, CurrentProcessStartTime);
 }
 
 void AItemTransmuter::Multicast_InstantiateProjectileMeshRepresentation_Implementation(ALetEmCookProjectile* Projectile)
