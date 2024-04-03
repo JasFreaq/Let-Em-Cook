@@ -9,20 +9,14 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Abstract)
 class LETEMCOOK_API AModularProjectile : public ALetEmCookProjectile
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly, Category = Items)
-	TArray<TObjectPtr<UGameItemData>> ChildGameItems;
-
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TArray<TObjectPtr<UStaticMeshComponent>> ItemMeshes;
-
-	TArray<float> ItemDistances;
-
 protected:
 
 	virtual void BeginPlay() override;
+	
+	virtual void AdjustMeshView() PURE_VIRTUAL(AModularProjectile::AdjustMeshView, );
 };
