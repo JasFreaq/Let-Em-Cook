@@ -9,6 +9,14 @@
 class ALetEmCookProjectile;
 class AHeldProjectileMesh;
 
+UENUM(BlueprintType)
+enum class EProjectileType : uint8
+{
+	Simple UMETA(DisplayName = "Simple"),
+	Modular UMETA(DisplayName = "Modular"),
+	Utensil UMETA(DisplayName = "Utensil")
+};
+
 /**
  * 
  */
@@ -24,10 +32,16 @@ class LETEMCOOK_API UGameItemData : public UDataAsset
 	TSubclassOf<ALetEmCookProjectile> Projectile;
 
 	UPROPERTY(EditDefaultsOnly)
+	EProjectileType ProjectileType;
+
+	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "ProjectileType == EProjectileType::Utensil"))
 	float ProjectileCooldown = 1.5f;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AHeldProjectileMesh> HeldMesh;
+
+	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "ProjectileType == EProjectileType::Modular"))
+	TArray<TObjectPtr<UGameItemData>> NestedGameItems;
 
 public:
 

@@ -3,6 +3,7 @@
 
 #include "ModularProjectile_Stackable.h"
 #include "Algo/Reverse.h"
+#include "Components/BoxComponent.h"
 
 void AModularProjectile_Stackable::BeginPlay()
 {
@@ -76,4 +77,50 @@ void AModularProjectile_Stackable::AdjustMeshView()
 			}
 		}
 	}
+
+	/// Collider Adjustments
+	
+	FVector TopLocation = MeshChildren[MeshChildren.Num() - 1]->GetComponentLocation();
+	FVector BaseLocation = GetMesh()->GetComponentLocation();
+
+	FVector OrientationVector = BaseLocation - TopLocation;
+	OrientationVector.Normalize();
+
+	FVector BaseCastLocation = BaseLocation + OrientationVector * 100.0f;
+	FVector TopCastLocation = TopLocation - OrientationVector * 100.0f;
+
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this);
+
+	FHitResult BaseHitResult;
+	FVector BaseImpact;
+	if (GetMesh()->LineTraceComponent(BaseHitResult, BaseLocation, BaseCastLocation, CollisionParams))
+	{
+		BaseImpact = BaseHitResult.ImpactPoint;
+	}
+
+	UPrimitiveComponent* TopComponent = Cast<UPrimitiveComponent>(MeshChildren[MeshChildren.Num() - 1]);
+	FHitResult TopHitResult;
+	FVector TopImpact;
+	if (TopComponent->LineTraceComponent(TopHitResult, TopCastLocation, TopLocation, CollisionParams))
+	{
+		TopImpact = TopHitResult.ImpactPoint;
+	}
+
+	UE::Math::TVector<double> ColliderExtent = GetCollisionComp()->Bounds.BoxExtent;
+	FVector ProjectedExtent = ColliderExtent.ProjectOnToNormal(OrientationVector);
+	ProjectedExtent.Normalize();
+
+	FVector CoreColliderExtents = FVector::OneVector - ProjectedExtent.GetAbs();
+	CoreColliderExtents.Normalize();
+
+	ProjectedExtent *= FVector::Distance(BaseImpact, TopImpact) / 2;
+	FVector NewExtent = ColliderExtent.ProjectOnToNormal(CoreColliderExtents) + ProjectedExtent;
+
+	GetCollisionComp()->SetBoxExtent(NewExtent, true);
+
+	FVector MeshLocation = GetMesh()->GetRelativeLocation();
+	MeshLocation.Normalize();
+	MeshLocation *= ProjectedExtent;
+	GetMesh()->SetRelativeLocation(MeshLocation);
 }
