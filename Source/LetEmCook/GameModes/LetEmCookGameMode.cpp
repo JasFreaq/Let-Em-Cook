@@ -1,7 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "LetEmCookGameMode.h"
+
 #include "LetEmCook/Actors/LetEmCookProjectile.h"
+#include "LetEmCook/Actors/ModularProjectile.h"
 #include "UObject/ConstructorHelpers.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/DataAssets/InteractionData.h"
@@ -34,45 +36,79 @@ void ALetEmCookGameMode::Tick(float DeltaSeconds)
 			}
 
 			TObjectPtr<UInteractionData> RaisedInteraction;
+			UGameItemData* ActorAItem;
+			UGameItemData* ActorBItem;
+
 			for (const TObjectPtr<UInteractionData> Interaction : Interactions)
 			{
 				if (Interaction->GetItemA() == nullptr || Interaction->GetItemB() == nullptr)
 				{
 					UE_LOG(LogTemp, Error, TEXT("Missing references in %s"), *Interaction->GetName());
 					continue;
-				}
+				}				
 
-				if ((Event.ActorA->IsA(Interaction->GetItemA()->GetProjectile())
+				if (Event.ActorA->IsA(Interaction->GetItemA()->GetProjectile())
 					&& Event.ActorB->IsA(Interaction->GetItemB()->GetProjectile()))
-					|| Event.ActorA->IsA(Interaction->GetItemB()->GetProjectile())
+				{
+					RaisedInteraction = Interaction;
+					ActorAItem = Interaction->GetItemA();
+					ActorBItem = Interaction->GetItemB();
+
+					break;
+				}
+				
+				if (Event.ActorA->IsA(Interaction->GetItemB()->GetProjectile())
 					&& Event.ActorB->IsA(Interaction->GetItemA()->GetProjectile()))
 				{
 					RaisedInteraction = Interaction;
+					ActorAItem = Interaction->GetItemB();
+					ActorBItem = Interaction->GetItemA();
+
 					break;
 				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("No Interaction Found"));
-				}
+				
+				UE_LOG(LogTemp, Warning, TEXT("No Interaction Found"));
 			}
 
 			if (RaisedInteraction != nullptr)
 			{
-				if (RaisedInteraction->GetResultItem() != nullptr)
+				if (RaisedInteraction->IsInteractionModular())
 				{
-					FVector SpawnLocation = (Event.ActorA->GetActorLocation() + Event.ActorB->GetActorLocation()) / 2;
+					if (AModularProjectile* ModularProjectile = Cast<AModularProjectile>(Event.ActorA); ModularProjectile != nullptr)
+					{
+						ModularProjectile->ProcessCollision(ActorBItem);
 
-					FActorSpawnParameters SpawnParams;
-					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+						ProcessedActors.Add(Event.ActorB);
+					}
+					else if (ModularProjectile = Cast<AModularProjectile>(Event.ActorB); ModularProjectile != nullptr)
+					{
+						ModularProjectile->ProcessCollision(ActorAItem);
 
-					GetWorld()->SpawnActor<AActor>(RaisedInteraction->GetResultItem()->GetProjectile(), SpawnLocation, FQuat::Identity.Rotator(), SpawnParams);
-
-					ProcessedActors.Add(Event.ActorA);
-					ProcessedActors.Add(Event.ActorB);
+						ProcessedActors.Add(Event.ActorA);
+					}
+					else
+					{
+						UE_LOG(LogTemp, Error, TEXT("No Modular Projectile found in %s"), *RaisedInteraction->GetName());
+					}
 				}
 				else
 				{
-					UE_LOG(LogTemp, Error, TEXT("No Result Item set in %s"), *RaisedInteraction->GetName());
+					if (RaisedInteraction->GetResultItem() != nullptr)
+					{
+						FVector SpawnLocation = (Event.ActorA->GetActorLocation() + Event.ActorB->GetActorLocation()) / 2;
+
+						FActorSpawnParameters SpawnParams;
+						SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+						GetWorld()->SpawnActor<AActor>(RaisedInteraction->GetResultItem()->GetProjectile(), SpawnLocation, FQuat::Identity.Rotator(), SpawnParams);
+
+						ProcessedActors.Add(Event.ActorA);
+						ProcessedActors.Add(Event.ActorB);
+					}
+					else
+					{
+						UE_LOG(LogTemp, Error, TEXT("No Result Item set in %s"), *RaisedInteraction->GetName());
+					}
 				}
 			}
 		}

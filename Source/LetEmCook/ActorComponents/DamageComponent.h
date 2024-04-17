@@ -7,7 +7,7 @@
 #include "DamageComponent.generated.h"
 
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class LETEMCOOK_API UDamageComponent : public UActorComponent
 {
 	GENERATED_BODY()

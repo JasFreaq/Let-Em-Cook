@@ -7,8 +7,8 @@
 
 void AModularProjectile_Stackable::BeginPlay()
 {
-	GetMesh()->GetChildrenComponents(true, MeshChildren);
-	MeshChildren.Add(GetMesh());
+	Super::BeginPlay();
+	
 	Algo::Reverse(MeshChildren);
 
 	for (int i = 0; i < MeshChildren.Num(); i++)
@@ -16,10 +16,10 @@ void AModularProjectile_Stackable::BeginPlay()
 		ItemRelativeLocations.Add(MeshChildren[i]->GetRelativeLocation());
 	}
 
-	Super::BeginPlay();
+	AdjustProjectileState();
 }
 
-void AModularProjectile_Stackable::AdjustMeshView()
+void AModularProjectile_Stackable::AdjustProjectileState()
 {
 	for (int i = 0; i < MeshChildren.Num(); i++)
 	{

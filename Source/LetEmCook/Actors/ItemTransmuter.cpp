@@ -6,7 +6,6 @@
 #include "LetEmCook/Actors/LetEmCookProjectile.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/DataAssets/TransmuteData.h"
-#include "LetEmCook/Actors/HeldProjectileMesh.h"
 #include "Net/UnrealNetwork.h"
 
 // Sets default values

@@ -23,12 +23,17 @@ class LETEMCOOK_API UInteractionData : public UDataAsset
 	TObjectPtr<UGameItemData> ItemB;
 
 	UPROPERTY(EditDefaultsOnly)
+	bool bIsInteractionModular;
+
+	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "bIsInteractionModular == false"))
 	TObjectPtr<UGameItemData> ResultItem;
 
 public:
 	const TObjectPtr<UGameItemData> GetItemA() const { return ItemA; }
 
 	const TObjectPtr<UGameItemData> GetItemB() const { return ItemB; }
+
+	const bool IsInteractionModular() const { return bIsInteractionModular; }
 
 	const UGameItemData* GetResultItem() const { return ResultItem; }
 };

@@ -26,7 +26,11 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 {	
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(45.f, 96.0f);
-		
+
+	GetMesh()->SetOwnerNoSee(true);
+	GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, -0.f));
+	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -96.f));
+
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
@@ -39,8 +43,8 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
-	Mesh1P->SetRelativeRotation(FRotator(0.f, -90.f, -15.f));
-	Mesh1P->SetRelativeLocation(FVector(30.f, 0.f, -130.f));
+	Mesh1P->SetRelativeRotation(FRotator(-9.562271f, -100.698138f, -39.471045f));
+	Mesh1P->SetRelativeLocation(FVector(0.f, 0.f, -120.f));
 
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 	if (HealthComponent != nullptr)
@@ -709,7 +713,6 @@ void ALetEmCookCharacter::OnPickedUpIngredient()
 
 		HeldIngredientRepresentationMesh = InstantiateRepresentationMesh(CurrentlyHeldIngredient->GetGameItem()->GetHeldMesh());
 		HeldIngredientRepresentationMesh->GetProjectileMesh()->SetVisibility(true, true);
-
 	}
 }
 

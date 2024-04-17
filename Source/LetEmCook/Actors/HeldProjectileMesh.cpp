@@ -19,4 +19,5 @@ AHeldProjectileMesh::AHeldProjectileMesh()
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	ProjectileMesh->SetupAttachment(SceneRoot);
 	ProjectileMesh->BodyInstance.SetCollisionProfileName("NoCollision");
+	ProjectileMesh->CastShadow = false;
 }
