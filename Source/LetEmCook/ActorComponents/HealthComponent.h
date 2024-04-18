@@ -33,5 +33,7 @@ public:
 	float GetCurrentHealthRatio() const { return CurrentHealth / FullHealth; }
 
 protected:
+	virtual void BeginPlay() override;
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

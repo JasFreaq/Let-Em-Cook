@@ -213,9 +213,9 @@ private:
 	void HandleHeldMeshVisibility(bool bHideAll = false);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_HandleProjectileThrown(float Time);
+	void Multicast_HandleProjectileThrown();
 
-	bool CanThrowProjectile(float* out_RealtimeSeconds = nullptr);
+	bool CanThrowProjectile();
 
 	UFUNCTION(Server, Reliable)
 	void Server_SetOverlappingIngredient(AActor* Actor);

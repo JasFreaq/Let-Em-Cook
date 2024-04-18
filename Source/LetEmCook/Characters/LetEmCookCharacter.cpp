@@ -47,7 +47,7 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	Mesh1P->SetRelativeLocation(FVector(0.f, 0.f, -120.f));
 
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
-	if (HealthComponent != nullptr)
+	if (HealthComponent != nullptr && GetWorld() != nullptr)
 	{
 		HealthComponent->RegisterComponent();
 	}
@@ -64,8 +64,8 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 void ALetEmCookCharacter::BeginPlay()
 {
 	// Call the base class  
-	Super::BeginPlay();
-	
+	Super::BeginPlay();	
+
 	//Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -336,8 +336,7 @@ void ALetEmCookCharacter::LaunchProjectile()
 		{
 			if (UWorld* const World = GetWorld(); World != nullptr)
 			{
-				float RealtimeSeconds;
-				if (CanThrowProjectile(&RealtimeSeconds))
+				if (CanThrowProjectile())
 				{
 					//ALetEmCookGameMode* GameMode = Cast<ALetEmCookGameMode>(World->GetAuthGameMode());
 					//if (GameMode != nullptr)
@@ -378,7 +377,7 @@ void ALetEmCookCharacter::LaunchProjectile()
 					ALetEmCookProjectile* Projectile = World->SpawnActor<ALetEmCookProjectile>(UtensilProjectiles[CurrentProjectileIndex]->GetProjectile(), SpawnLocation, SpawnRotation, ActorSpawnParams);
 					if (Projectile != nullptr)
 					{
-						Multicast_HandleProjectileThrown(RealtimeSeconds);
+						Multicast_HandleProjectileThrown();
 
 						Projectile->AddImpulseToProjectile(SpawnRotation.Vector());
 					}
@@ -608,25 +607,21 @@ void ALetEmCookCharacter::HandleHeldMeshVisibility(bool bHideAll)
 	}
 }
 
-void ALetEmCookCharacter::Multicast_HandleProjectileThrown_Implementation(float Time)
+void ALetEmCookCharacter::Multicast_HandleProjectileThrown_Implementation()
 {
-	ProjectileCooldownMap[UtensilProjectiles[CurrentProjectileIndex]->GetProjectile()] = Time;
+	const float RealtimeSeconds = UGameplayStatics::GetRealTimeSeconds(this);
+	ProjectileCooldownMap[UtensilProjectiles[CurrentProjectileIndex]->GetProjectile()] = RealtimeSeconds;
+
 	ProjectileRepresentationMeshes[CurrentProjectileIndex]->GetProjectileMesh()->SetVisibility(false);
 }
 
-bool ALetEmCookCharacter::CanThrowProjectile(float* out_RealtimeSeconds)
+bool ALetEmCookCharacter::CanThrowProjectile()
 {
 	if (UtensilProjectiles[CurrentProjectileIndex]->GetProjectile() != nullptr)
 	{
 		const float RealtimeSeconds = UGameplayStatics::GetRealTimeSeconds(this);
 		const float SecondsElapsedSinceLastThrow = RealtimeSeconds - ProjectileCooldownMap[UtensilProjectiles[CurrentProjectileIndex]->GetProjectile()];
-
-		// Store the current real-time seconds in the out parameter if provided
-		if (out_RealtimeSeconds) 
-		{
-			*out_RealtimeSeconds = RealtimeSeconds;
-		}
-
+		
 		return SecondsElapsedSinceLastThrow > UtensilProjectiles[CurrentProjectileIndex]->GetProjectileCooldown()
 			|| ProjectileCooldownMap[UtensilProjectiles[CurrentProjectileIndex]->GetProjectile()] == 0.f;
 	}
@@ -713,6 +708,35 @@ void ALetEmCookCharacter::OnPickedUpIngredient()
 
 		HeldIngredientRepresentationMesh = InstantiateRepresentationMesh(CurrentlyHeldIngredient->GetGameItem()->GetHeldMesh());
 		HeldIngredientRepresentationMesh->GetProjectileMesh()->SetVisibility(true, true);
+
+		/*USceneComponent* AttachMesh = nullptr;
+		if (IsLocallyControlled())
+		{
+			AttachMesh = Mesh1P;
+		}
+		else
+		{
+			AttachMesh = GetMesh();
+		}
+		
+		USceneComponent* ProjectileMesh = CurrentlyHeldIngredient->GetMesh();
+		ProjectileMesh->AttachToComponent(AttachMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, HandSocketName);
+				
+		FRotator PivotWorldRotation = ProjectileMesh->GetSocketRotation(FName("HoldPivot"));
+		FQuat PivotLocalRotation = ProjectileMesh->GetComponentTransform().InverseTransformRotation(PivotWorldRotation.Quaternion());
+
+		ProjectileMesh->SetRelativeRotation(PivotLocalRotation);
+
+		FVector ProjectileLocation = ProjectileMesh->GetComponentLocation();
+		FVector PivotLocation = ProjectileMesh->GetSocketLocation(FName("HoldPivot"));
+
+		FVector ProjectilePivotOffset = ProjectileLocation - PivotLocation;
+
+		FVector MeshSocketLocation = AttachMesh->GetSocketLocation(HandSocketName);
+
+		ProjectileMesh->SetWorldLocation(MeshSocketLocation + ProjectilePivotOffset);
+
+		ProjectileMesh->SetVisibility(true);*/
 	}
 }
 

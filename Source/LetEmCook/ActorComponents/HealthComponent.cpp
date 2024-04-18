@@ -13,14 +13,19 @@ UHealthComponent::UHealthComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 
 	CurrentHealth = FullHealth;
-
-	SetIsReplicated(true);
 }
 
 void UHealthComponent::ApplyDamage(float Damage)
 {
 	CurrentHealth -= Damage;
 	CurrentHealth = FMath::Clamp(CurrentHealth, 0.f, FullHealth);
+}
+
+void UHealthComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	SetIsReplicated(true);
 }
 
 void UHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
