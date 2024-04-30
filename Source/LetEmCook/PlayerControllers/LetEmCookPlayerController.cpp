@@ -43,7 +43,7 @@ void ALetEmCookPlayerController::Login()
 {
 	/*
 	This function will access the EOS OSS via the OSS identity interface to log first into Epic Account Services, and then into Epic Game Services.
-	It will bind a delegate to handle the callback event once login call succeeeds or fails.
+	It will bind a delegate to handle the callback event once login call succeeds or fails.
 	All functions that access the OSS will have this structure: 1-Get OSS interface, 2-Bind delegate for callback and 3-Call OSS interface function (which will call the correspongin EOS OSS function)
 	*/
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
@@ -63,7 +63,7 @@ void ALetEmCookPlayerController::Login()
 	You should parametrize this Login function and pass the parameter here for splitscreen.
 	*/
 	LoginDelegateHandle = Identity->AddOnLoginCompleteDelegate_Handle(0,
-		FOnLoginCompleteDelegate::CreateUObject(this, &ThisClass::HandleLoginCompleted));
+		FOnLoginCompleteDelegate::CreateUObject(this, &ALetEmCookPlayerController::HandleLoginCompleted));
 
 	// Grab command line parameters. If empty call hardcoded login function - Hardcoded login function useful for Play In Editor. 
 	FString AuthType;
@@ -124,7 +124,7 @@ void ALetEmCookPlayerController::HandleLoginCompleted(int32 LocalUserNum, bool b
 	}
 	else //Login failed
 	{
-		// If your game is online only, you may want to return an errror to the user and return to a menu that uses a different GameMode/PlayerController.
+		// If your game is online only, you may want to return an error to the user and return to a menu that uses a different GameMode/PlayerController.
 
 		UE_LOG(LogTemp, Warning, TEXT("EOS login failed.")); //Print sign in failure in logs as a warning.
 	}
@@ -144,7 +144,7 @@ void ALetEmCookPlayerController::FindSessions(FName SearchKey, FString SearchVal
 	// Remove the default search parameters that FOnlineSessionSearch sets up.
 	Search->QuerySettings.SearchParams.Empty();
 
-	Search->QuerySettings.Set(SearchKey, SearchValue, EOnlineComparisonOp::Equals); // Seach using our Key/Value pair
+	Search->QuerySettings.Set(SearchKey, SearchValue, EOnlineComparisonOp::Equals); // Search using our Key/Value pair
 	FindSessionsDelegateHandle = Session->AddOnFindSessionsCompleteDelegate_Handle(FOnFindSessionsCompleteDelegate::CreateUObject(
 		this, &ALetEmCookPlayerController::HandleFindSessionsCompleted, Search));
 
@@ -163,10 +163,8 @@ void ALetEmCookPlayerController::JoinSession()
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
 
-	JoinSessionDelegateHandle =
-		Session->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateUObject(
-			this,
-			&ThisClass::HandleJoinSessionCompleted));
+	JoinSessionDelegateHandle = Session->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateUObject(
+		this, &ALetEmCookPlayerController::HandleJoinSessionCompleted));
 
 	UE_LOG(LogTemp, Log, TEXT("Joining session."));
 	if (!Session->JoinSession(0, "SessionName", *SessionToJoin))
@@ -175,8 +173,7 @@ void ALetEmCookPlayerController::JoinSession()
 	}
 }
 
-void ALetEmCookPlayerController::HandleFindSessionsCompleted(bool bWasSuccessful,
-	TSharedRef<FOnlineSessionSearch> Search)
+void ALetEmCookPlayerController::HandleFindSessionsCompleted(bool bWasSuccessful, TSharedRef<FOnlineSessionSearch> Search)
 {
 	// This function is triggered via the callback we set in FindSession once the session is found (or there is a failure)
 
@@ -187,7 +184,7 @@ void ALetEmCookPlayerController::HandleFindSessionsCompleted(bool bWasSuccessful
 	{
 		UE_LOG(LogTemp, Log, TEXT("Found session."));
 
-		for (auto SessionInSearchResult : Search->SearchResults)
+		for (FOnlineSessionSearchResult SessionInSearchResult : Search->SearchResults)
 		{
 			// Typically you want to check if the session is valid before joining. There is a bug in the EOS OSS where IsValid() returns false when the session is created on a DS. 
 			// Instead of customizing the engine for this tutorial, we're simply not checking if the session is valid. The code below should go in this if statement once the bug is fixed. 
@@ -208,6 +205,7 @@ void ALetEmCookPlayerController::HandleFindSessionsCompleted(bool bWasSuccessful
 			// For the tutorial we will join the first session found automatically. Usually you would loop through all the sessions and determine which one is best to join. 
 			break;
 		}
+
 		JoinSession();
 	}
 	else
@@ -219,13 +217,13 @@ void ALetEmCookPlayerController::HandleFindSessionsCompleted(bool bWasSuccessful
 	FindSessionsDelegateHandle.Reset();
 }
 
-void ALetEmCookPlayerController::HandleJoinSessionCompleted(FName SessionName,
-	EOnJoinSessionCompleteResult::Type Result)
+void ALetEmCookPlayerController::HandleJoinSessionCompleted(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-	// Tutorial 4: This function is triggered via the callback we set in JoinSession once the session is joined (or there is a failure)
+	// This function is triggered via the callback we set in JoinSession once the session is joined (or there is a failure)
 
 	IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	IOnlineSessionPtr Session = Subsystem->GetSessionInterface();
+
 	if (Result == EOnJoinSessionCompleteResult::Success)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Joined session."));
@@ -235,7 +233,10 @@ void ALetEmCookPlayerController::HandleJoinSessionCompleted(FName SessionName,
 			ConnectString = "127.0.0.1:7777";
 			FURL DedicatedServerURL(nullptr, *ConnectString, TRAVEL_Absolute);
 			FString DedicatedServerJoinError;
-			auto DedicatedServerJoinStatus = GEngine->Browse(GEngine->GetWorldContextFromWorldChecked(GetWorld()), DedicatedServerURL, DedicatedServerJoinError);
+
+			EBrowseReturnVal::Type DedicatedServerJoinStatus = GEngine->Browse(
+				GEngine->GetWorldContextFromWorldChecked(GetWorld()), DedicatedServerURL, DedicatedServerJoinError);
+
 			if (DedicatedServerJoinStatus == EBrowseReturnVal::Failure)
 			{
 				UE_LOG(LogTemp, Error, TEXT("Failed to browse for dedicated server. Error is: %s"), *DedicatedServerJoinError);
@@ -245,6 +246,7 @@ void ALetEmCookPlayerController::HandleJoinSessionCompleted(FName SessionName,
 			// As we are testing locally, and for the purposes of keeping this tutorial simple, this is omitted. 
 		}
 	}
+
 	Session->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionDelegateHandle);
 	JoinSessionDelegateHandle.Reset();
 }

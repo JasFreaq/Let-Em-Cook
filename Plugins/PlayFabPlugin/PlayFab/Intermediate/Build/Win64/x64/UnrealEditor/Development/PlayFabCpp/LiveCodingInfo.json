@@ -1,0 +1,75 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.PlayFabCpp.1_of_10.cpp.obj": [
+			"PlayFabAdminAPI.cpp.obj",
+			"PlayFabAdminDataModels.cpp.obj"
+		],
+		"Module.PlayFabCpp.2_of_10.cpp.obj": [
+			"PlayFabAdminInstanceAPI.cpp.obj",
+			"PlayFabAuthenticationAPI.cpp.obj",
+			"PlayFabAuthenticationDataModels.cpp.obj",
+			"PlayFabAuthenticationInstanceAPI.cpp.obj",
+			"PlayFabClientAPI.cpp.obj"
+		],
+		"Module.PlayFabCpp.3_of_10.cpp.obj": [
+			"PlayFabClientDataModels.cpp.obj"
+		],
+		"Module.PlayFabCpp.4_of_10.cpp.obj": [
+			"PlayFabClientInstanceAPI.cpp.obj",
+			"PlayFabCloudScriptAPI.cpp.obj",
+			"PlayFabCloudScriptDataModels.cpp.obj"
+		],
+		"Module.PlayFabCpp.5_of_10.cpp.obj": [
+			"PlayFabCloudScriptInstanceAPI.cpp.obj",
+			"PlayFabCppBaseModel.cpp.obj",
+			"PlayFabDataAPI.cpp.obj",
+			"PlayFabDataDataModels.cpp.obj",
+			"PlayFabDataInstanceAPI.cpp.obj",
+			"PlayFabEconomyAPI.cpp.obj",
+			"PlayFabEconomyDataModels.cpp.obj"
+		],
+		"Module.PlayFabCpp.6_of_10.cpp.obj": [
+			"PlayFabEconomyInstanceAPI.cpp.obj",
+			"PlayFabEventsAPI.cpp.obj",
+			"PlayFabEventsDataModels.cpp.obj",
+			"PlayFabEventsInstanceAPI.cpp.obj",
+			"PlayFabExperimentationAPI.cpp.obj",
+			"PlayFabExperimentationDataModels.cpp.obj",
+			"PlayFabExperimentationInstanceAPI.cpp.obj",
+			"PlayFabGroupsAPI.cpp.obj",
+			"PlayFabGroupsDataModels.cpp.obj",
+			"PlayFabGroupsInstanceAPI.cpp.obj",
+			"PlayFabInsightsAPI.cpp.obj"
+		],
+		"Module.PlayFabCpp.7_of_10.cpp.obj": [
+			"PlayFabInsightsDataModels.cpp.obj",
+			"PlayFabInsightsInstanceAPI.cpp.obj",
+			"PlayFabJsonHelpers.cpp.obj",
+			"PlayFabLocalizationAPI.cpp.obj",
+			"PlayFabLocalizationDataModels.cpp.obj",
+			"PlayFabLocalizationInstanceAPI.cpp.obj",
+			"PlayFabMatchmakerAPI.cpp.obj",
+			"PlayFabMatchmakerDataModels.cpp.obj",
+			"PlayFabMatchmakerInstanceAPI.cpp.obj",
+			"PlayFabMultiplayerAPI.cpp.obj",
+			"PlayFabMultiplayerDataModels.cpp.obj"
+		],
+		"Module.PlayFabCpp.8_of_10.cpp.obj": [
+			"PlayFabMultiplayerInstanceAPI.cpp.obj",
+			"PlayFabProfilesAPI.cpp.obj",
+			"PlayFabProfilesDataModels.cpp.obj",
+			"PlayFabProfilesInstanceAPI.cpp.obj",
+			"PlayFabResultHandler.cpp.obj",
+			"PlayFabServerAPI.cpp.obj"
+		],
+		"Module.PlayFabCpp.9_of_10.cpp.obj": [
+			"PlayFabServerDataModels.cpp.obj"
+		],
+		"Module.PlayFabCpp.10_of_10.cpp.obj": [
+			"PlayFabServerInstanceAPI.cpp.obj",
+			"PlayFabSettings.cpp.obj",
+			"PlayFab.cpp.obj"
+		]
+	}
+}

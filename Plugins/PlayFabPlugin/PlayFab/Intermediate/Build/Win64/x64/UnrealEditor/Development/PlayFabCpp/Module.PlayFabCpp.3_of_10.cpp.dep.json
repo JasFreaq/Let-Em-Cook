@@ -1,0 +1,33 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "c:\\users\\jasfi\\documents\\unreal projects\\letemcook\\plugins\\playfabplugin\\playfab\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\playfabcpp\\module.playfabcpp.3_of_10.cpp",
+        "ProvidedModule": "",
+        "PCH": "c:\\unreal engine source\\unrealengine\\engine\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\coreuobject\\sharedpch.coreuobject.shadowerrors.inclorderunreal5_1.h.pch",
+        "Includes": [
+            "c:\\users\\jasfi\\documents\\unreal projects\\letemcook\\plugins\\playfabplugin\\playfab\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\playfabcpp\\definitions.playfabcpp.h",
+            "c:\\users\\jasfi\\documents\\unreal projects\\letemcook\\plugins\\playfabplugin\\playfab\\source\\playfabcpp\\private\\core\\playfabclientdatamodels.cpp",
+            "c:\\users\\jasfi\\documents\\unreal projects\\letemcook\\plugins\\playfabplugin\\playfab\\source\\playfabcpp\\public\\core\\playfabclientdatamodels.h",
+            "c:\\users\\jasfi\\documents\\unreal projects\\letemcook\\plugins\\playfabplugin\\playfab\\source\\playfabcpp\\public\\core\\playfabcppbasemodel.h",
+            "c:\\unreal engine source\\unrealengine\\engine\\source\\runtime\\json\\public\\dom\\jsonobject.h",
+            "c:\\unreal engine source\\unrealengine\\engine\\source\\runtime\\json\\public\\dom\\jsonvalue.h",
+            "c:\\unreal engine source\\unrealengine\\engine\\source\\runtime\\json\\public\\serialization\\jsontypes.h",
+            "c:\\unreal engine source\\unrealengine\\engine\\source\\runtime\\json\\public\\jsonglobals.h",
+            "c:\\unreal engine source\\unrealengine\\engine\\source\\runtime\\json\\public\\serialization\\jsonwriter.h",
+            "c:\\unreal engine source\\unrealengine\\engine\\source\\runtime\\json\\public\\policies\\prettyjsonprintpolicy.h",
+            "c:\\unreal engine source\\unrealengine\\engine\\source\\runtime\\json\\public\\policies\\jsonprintpolicy.h",
+            "c:\\unreal engine source\\unrealengine\\engine\\source\\runtime\\json\\public\\serialization\\jsonreader.h",
+            "c:\\users\\jasfi\\documents\\unreal projects\\letemcook\\plugins\\playfabplugin\\playfab\\source\\playfabcommon\\public\\playfabauthenticationcontext.h",
+            "c:\\users\\jasfi\\documents\\unreal projects\\letemcook\\plugins\\playfabplugin\\playfab\\source\\playfabcommon\\public\\playfabcommonsettings.h",
+            "c:\\users\\jasfi\\documents\\unreal projects\\letemcook\\plugins\\playfabplugin\\playfab\\source\\playfabcommon\\public\\playfabruntimesettings.h",
+            "c:\\users\\jasfi\\documents\\unreal projects\\letemcook\\plugins\\playfabplugin\\playfab\\intermediate\\build\\win64\\unrealeditor\\inc\\playfabcommon\\uht\\playfabruntimesettings.generated.h",
+            "c:\\unreal engine source\\unrealengine\\engine\\source\\runtime\\coreuobject\\public\\uobject\\scriptmacros.h",
+            "c:\\unreal engine source\\unrealengine\\engine\\source\\runtime\\coreuobject\\public\\uobject\\stack.h",
+            "c:\\users\\jasfi\\documents\\unreal projects\\letemcook\\plugins\\playfabplugin\\playfab\\intermediate\\build\\win64\\unrealeditor\\inc\\playfabcommon\\uht\\playfabauthenticationcontext.generated.h",
+            "c:\\unreal engine source\\unrealengine\\engine\\source\\runtime\\json\\public\\policies\\condensedjsonprintpolicy.h",
+            "c:\\users\\jasfi\\documents\\unreal projects\\letemcook\\plugins\\playfabplugin\\playfab\\source\\playfabcpp\\public\\core\\playfabjsonhelpers.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

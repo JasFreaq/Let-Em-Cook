@@ -44,8 +44,7 @@ void ALetEmCookGameSession::NotifyLogout(const APlayerController* PC)
 	}
 }
 
-void ALetEmCookGameSession::RegisterPlayer(APlayerController* NewPlayer, const FUniqueNetIdPtr& UniqueId,
-                                           bool bWasFromInvite)
+void ALetEmCookGameSession::RegisterPlayer(APlayerController* NewPlayer, const FUniqueNetIdPtr& UniqueId, bool bWasFromInvite)
 {
 	// Override base function to register player in EOS Session
 	Super::RegisterPlayer(NewPlayer, UniqueId, bWasFromInvite);
