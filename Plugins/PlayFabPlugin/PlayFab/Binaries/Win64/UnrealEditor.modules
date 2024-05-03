@@ -1,9 +1,0 @@
-{
-	"BuildId": "ba0e8818-1552-4123-8920-2c729bbb0993",
-	"Modules": 
-	{
-		"PlayFab": "UnrealEditor-PlayFab.dll",
-		"PlayFabCommon": "UnrealEditor-PlayFabCommon.dll",
-		"PlayFabCpp": "UnrealEditor-PlayFabCpp.dll"
-	}
-}
