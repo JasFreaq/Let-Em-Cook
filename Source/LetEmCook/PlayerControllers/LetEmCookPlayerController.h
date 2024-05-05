@@ -27,22 +27,26 @@ class LETEMCOOK_API ALetEmCookPlayerController : public APlayerController
 
 	UPROPERTY(Replicated)
 	TObjectPtr<UPickupNotifyWidget> PickupWidgetInstance;
-
-	UPROPERTY()
+	
 	bool bIsPickupWidgetVisible = false;
 
-public:
+	TSubclassOf<ALetEmCookCharacter> CharacterClass;
 	
+public:
+
 	void ShowPickupWidget(FString ItemName);
 
 	void HidePickupWidget();
+
+	UFUNCTION(BlueprintCallable)
+	void SetCharacterClass(TSubclassOf<ALetEmCookCharacter> ChosenCharacterClass);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	
 private:
 
 	UFUNCTION(Server, Reliable)

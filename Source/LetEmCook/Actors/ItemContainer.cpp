@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/Actors/LetEmCookProjectile.h"
+#include "LetEmCook/GameStates/LetEmCookGameStateBase.h"
 
 // Sets default values
 AItemContainer::AItemContainer()
@@ -51,7 +52,7 @@ void AItemContainer::Tick(float DeltaTime)
 
 	if (!CooldownTimestamps.IsEmpty())
 	{
-		const float RealtimeSeconds = UGameplayStatics::GetRealTimeSeconds(this);	
+		const float RealtimeSeconds = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 		const float SecondsElapsedSince = RealtimeSeconds - *CooldownTimestamps.Peek();
 
 		if (SecondsElapsedSince > ItemCooldown)
@@ -71,7 +72,7 @@ ALetEmCookProjectile* AItemContainer::GetProjectile()
 	{
 		if (UWorld* const World = GetWorld(); World != nullptr)
 		{
-			const float RealtimeSeconds = UGameplayStatics::GetRealTimeSeconds(this);
+			const float RealtimeSeconds = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 			CooldownTimestamps.Enqueue(RealtimeSeconds);
 
 			ItemMeshes[CurrentContainerAmount - 1]->SetVisibility(false);

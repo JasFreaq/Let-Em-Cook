@@ -4,8 +4,10 @@
 #include "LetEmCookPlayerController.h"
 
 #include "Blueprint/UserWidget.h"
-#include "LetEmCook/GameInstances/LetEmCookGameInstance.h"
+#include "GameFramework/GameStateBase.h"
 #include "Net/UnrealNetwork.h"
+
+#include "LetEmCook/GameInstances/LetEmCookGameInstance.h"
 #include "LetEmCook/UserWidgets/PickupNotifyWidget.h"
 
 void ALetEmCookPlayerController::BeginPlay()
@@ -86,6 +88,11 @@ void ALetEmCookPlayerController::HidePickupWidget()
 	{
 		Client_HidePickupWidget();
 	}
+}
+
+void ALetEmCookPlayerController::SetCharacterClass(TSubclassOf<ALetEmCookCharacter> ChosenCharacterClass)
+{
+	CharacterClass = ChosenCharacterClass;
 }
 
 void ALetEmCookPlayerController::Client_ShowPickupWidget_Implementation(const FString& ItemName)

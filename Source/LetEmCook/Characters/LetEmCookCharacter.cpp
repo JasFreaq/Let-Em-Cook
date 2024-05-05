@@ -17,6 +17,7 @@
 #include "LetEmCook/Interfaces/Interactable.h"
 #include "LetEmCook/ActorComponents/DamageComponent.h"
 #include "LetEmCook/ActorComponents/HealthComponent.h"
+#include "LetEmCook/GameStates/LetEmCookGameStateBase.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -166,7 +167,7 @@ void ALetEmCookCharacter::Tick(float DeltaTime)
 	{
 		if (!ProjectileRepresentationMeshes[CurrentProjectileIndex]->GetProjectileMesh()->IsVisible())
 		{
-			const float Seconds = UGameplayStatics::GetRealTimeSeconds(this);
+			const float Seconds = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 			const float SecondsElapsed = Seconds - ProjectileCooldownMap[UtensilProjectiles[CurrentProjectileIndex]->GetProjectile()];
 
 			if (SecondsElapsed > UtensilProjectiles[CurrentProjectileIndex]->GetProjectileCooldown())
@@ -338,33 +339,6 @@ void ALetEmCookCharacter::LaunchProjectile()
 			{
 				if (CanThrowProjectile())
 				{
-					//ALetEmCookGameMode* GameMode = Cast<ALetEmCookGameMode>(World->GetAuthGameMode());
-					//if (GameMode != nullptr)
-					//{
-					//	ALetEmCookProjectile* Projectile = GameMode->GetProjectileFromPool(CurrentProjectileClass);
-					//	UE_LOG(LogTemp, Warning, TEXT("Projectile: %s"), *CurrentProjectileClass->GetName());
-					//	if (Projectile != nullptr)
-					//	{
-					//		ProjectileCooldownMap[CurrentProjectileClass] = RealtimeSeconds;
-
-					//		// Find the camera rotation
-					//		APlayerController* PlayerController = Cast<APlayerController>(GetController());
-					//		const FRotator LaunchRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
-					//		// ThrowOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-					//		const FVector LaunchLocation = GetActorLocation() + LaunchRotation.RotateVector(ThrowOffset);
-					//		
-					//		// Spawn the projectile at the muzzle
-					//		Projectile->SetActorLocation(LaunchLocation, false, nullptr, ETeleportType::ResetPhysics);
-					//		Projectile->SetActorRotation(LaunchRotation, ETeleportType::ResetPhysics);
-					//		//Projectile->SetActorHiddenInGame(false);
-					//		//Projectile->SetActorEnableCollision(true);
-					//		//Projectile->GetCollisionComp()->SetSimulatePhysics(true);
-
-					//		//// Set the projectile's initial velocity
-					//		//Projectile->AddImpulseToProjectile(LaunchRotation.Vector());
-					//	}
-					//}
-
 					FRotator SpawnRotation;
 					FVector SpawnLocation;
 					GetProjectileSpawnLocationAndRotation(true, SpawnLocation, SpawnRotation);
@@ -395,7 +369,7 @@ float ALetEmCookCharacter::GetProjectileCooldownRatio(TSubclassOf<ALetEmCookProj
 {
 	if (ProjectileCooldownMap.Contains(ProjectileClass))
 	{
-		const float Seconds = UGameplayStatics::GetRealTimeSeconds(this);
+		const float Seconds = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 		const float SecondsElapsed = Seconds - ProjectileCooldownMap[ProjectileClass];
 
 		for (int i = 0; i < UtensilProjectiles.Num(); i++)
@@ -609,7 +583,7 @@ void ALetEmCookCharacter::HandleHeldMeshVisibility(bool bHideAll)
 
 void ALetEmCookCharacter::Multicast_HandleProjectileThrown_Implementation()
 {
-	const float RealtimeSeconds = UGameplayStatics::GetRealTimeSeconds(this);
+	const float RealtimeSeconds = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 	ProjectileCooldownMap[UtensilProjectiles[CurrentProjectileIndex]->GetProjectile()] = RealtimeSeconds;
 
 	ProjectileRepresentationMeshes[CurrentProjectileIndex]->GetProjectileMesh()->SetVisibility(false);
@@ -619,7 +593,7 @@ bool ALetEmCookCharacter::CanThrowProjectile()
 {
 	if (UtensilProjectiles[CurrentProjectileIndex]->GetProjectile() != nullptr)
 	{
-		const float RealtimeSeconds = UGameplayStatics::GetRealTimeSeconds(this);
+		const float RealtimeSeconds = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 		const float SecondsElapsedSinceLastThrow = RealtimeSeconds - ProjectileCooldownMap[UtensilProjectiles[CurrentProjectileIndex]->GetProjectile()];
 		
 		return SecondsElapsedSinceLastThrow > UtensilProjectiles[CurrentProjectileIndex]->GetProjectileCooldown()

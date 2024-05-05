@@ -6,6 +6,7 @@
 #include "LetEmCook/Actors/LetEmCookProjectile.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/DataAssets/TransmuteData.h"
+#include "LetEmCook/GameStates/LetEmCookGameStateBase.h"
 #include "Net/UnrealNetwork.h"
 
 // Sets default values
@@ -55,7 +56,7 @@ void AItemTransmuter::Tick(float DeltaTime)
 	{
 		if (CurrentlyProcessingItem != nullptr)
 		{
-			const float CurrentTime = GetWorld()->GetTimeSeconds();
+			const float CurrentTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 
 			if (CurrentTime - CurrentProcessStartTime >= CurrentTransmutation->GetTransmuteTime())
 			{
@@ -107,7 +108,8 @@ void AItemTransmuter::OnHit(AActor* SelfActor, AActor* OtherActor, FVector Norma
 
 						CurrentlyProcessingItem = Projectile;
 						CurrentTransmutation = Transmutation;
-						CurrentProcessStartTime = GetWorld()->GetTimeSeconds();
+						
+						CurrentProcessStartTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 
 						break;
 					}
@@ -152,16 +154,16 @@ float AItemTransmuter::GetProcessTimeRemainingRatio() const
 {
 	if (CurrentlyProcessingItem != nullptr)
 	{
-		const float CurrentTime = GetWorld()->GetTimeSeconds();
+		const float CurrentTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 
 		const float TimeRemainingRatio = (CurrentTime - CurrentProcessStartTime) / CurrentTransmutation->GetTransmuteTime();
 
-		UE_LOG(LogTemp, Warning, TEXT("Current Time: %f, Current Process Start Time: %f, Time Remaining Ratio: %f"), CurrentTime, CurrentProcessStartTime, TimeRemainingRatio);
+		//UE_LOG(LogTemp, Warning, TEXT("Current Time: %f, Current Process Start Time: %f, Time Remaining Ratio: %f"), CurrentTime, CurrentProcessStartTime, TimeRemainingRatio);
 
 		return TimeRemainingRatio;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("No item is currently being processed!"));
+	//UE_LOG(LogTemp, Warning, TEXT("No item is currently being processed!"));
 
 	return 0.f;
 }
