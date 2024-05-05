@@ -28,6 +28,9 @@ class LETEMCOOK_API ALetEmCookPlayerController : public APlayerController
 	UPROPERTY(Replicated)
 	TObjectPtr<UPickupNotifyWidget> PickupWidgetInstance;
 
+	UPROPERTY()
+	bool bIsPickupWidgetVisible = false;
+
 public:
 	
 	void ShowPickupWidget(FString ItemName);
@@ -41,6 +44,9 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetSessionIdOnGameInstance(const FString& Session);
 
 	UFUNCTION(Client, Reliable)
 	void Client_ShowPickupWidget(const FString& ItemName);

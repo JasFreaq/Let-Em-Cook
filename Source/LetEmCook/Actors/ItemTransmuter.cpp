@@ -154,8 +154,14 @@ float AItemTransmuter::GetProcessTimeRemainingRatio() const
 	{
 		const float CurrentTime = GetWorld()->GetTimeSeconds();
 
-		return (CurrentTime - CurrentProcessStartTime) / CurrentTransmutation->GetTransmuteTime();
+		const float TimeRemainingRatio = (CurrentTime - CurrentProcessStartTime) / CurrentTransmutation->GetTransmuteTime();
+
+		UE_LOG(LogTemp, Warning, TEXT("Current Time: %f, Current Process Start Time: %f, Time Remaining Ratio: %f"), CurrentTime, CurrentProcessStartTime, TimeRemainingRatio);
+
+		return TimeRemainingRatio;
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("No item is currently being processed!"));
 
 	return 0.f;
 }

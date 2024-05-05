@@ -8,6 +8,7 @@
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/DataAssets/InteractionData.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "LetEmCook/GameInstances/LetEmCookGameInstance.h"
 
 ALetEmCookGameMode::ALetEmCookGameMode(): Super()
 {
@@ -16,12 +17,64 @@ ALetEmCookGameMode::ALetEmCookGameMode(): Super()
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
 
 	PrimaryActorTick.bCanEverTick = true;
+
+	bUseSeamlessTravel = true;
+}
+
+void ALetEmCookGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	LoggedControllers.Remove(Exiting);
+
+	UE_LOG(LogTemp, Warning, TEXT("Logged Controllers: %d"), LoggedControllers.Num());
+
+	if (LoggedControllers.Num() == 0)
+	{
+		if (ULetEmCookGameInstance* GameInstance = Cast<ULetEmCookGameInstance>(GetGameInstance()); GameInstance != nullptr)
+		{
+			GameInstance->InitiateServerShutdown();
+		}
+	}
+}
+
+void ALetEmCookGameMode::OnPostLogin(AController* NewPlayer)
+{
+	Super::OnPostLogin(NewPlayer);
+
+	UE_LOG(LogTemp, Warning, TEXT("Post Login"));
+
+	LoggedControllers.Add(NewPlayer);
+
+	UE_LOG(LogTemp, Warning, TEXT("Logged Controllers: %d"), LoggedControllers.Num());
 }
 
 void ALetEmCookGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	if (bHasGameBegun)
+	{
+		ProcessColision();
+	}
+}
+
+void ALetEmCookGameMode::SetGameBegun(bool bGameBegun)
+{
+	bHasGameBegun = bGameBegun;
+}
+
+void ALetEmCookGameMode::RaiseCollisionEvent(AActor* ActorA, AActor* ActorB)
+{
+	if (HasAuthority())
+	{
+		const FCollisionEventData Event(ActorA, ActorB);
+		CollisionEventsQueue.Enqueue(Event);
+	}
+}
+
+void ALetEmCookGameMode::ProcessColision()
+{
 	if (HasAuthority())
 	{
 		// Process the interaction queue
@@ -45,7 +98,7 @@ void ALetEmCookGameMode::Tick(float DeltaSeconds)
 				{
 					UE_LOG(LogTemp, Error, TEXT("Missing references in %s"), *Interaction->GetName());
 					continue;
-				}				
+				}
 
 				if (Event.ActorA->IsA(Interaction->GetItemA()->GetProjectile())
 					&& Event.ActorB->IsA(Interaction->GetItemB()->GetProjectile()))
@@ -56,7 +109,7 @@ void ALetEmCookGameMode::Tick(float DeltaSeconds)
 
 					break;
 				}
-				
+
 				if (Event.ActorA->IsA(Interaction->GetItemB()->GetProjectile())
 					&& Event.ActorB->IsA(Interaction->GetItemA()->GetProjectile()))
 				{
@@ -66,7 +119,7 @@ void ALetEmCookGameMode::Tick(float DeltaSeconds)
 
 					break;
 				}
-				
+
 				UE_LOG(LogTemp, Warning, TEXT("No Interaction Found"));
 			}
 
@@ -119,15 +172,6 @@ void ALetEmCookGameMode::Tick(float DeltaSeconds)
 		}
 
 		ProcessedActors.Empty();
-	}
-}
-
-void ALetEmCookGameMode::RaiseCollisionEvent(AActor* ActorA, AActor* ActorB)
-{
-	if (HasAuthority())
-	{
-		const FCollisionEventData Event(ActorA, ActorB);
-		CollisionEventsQueue.Enqueue(Event);
 	}
 }
 

@@ -1,4 +1,2 @@
 # Auto detect text files and perform LF normalization
 * text=auto
-*.pdb filter=lfs diff=lfs merge=lfs -text
-Plugins/PlayFabPlugin/PlayFab/Binaries/Win64 filter=lfs diff=lfs merge=lfs -text

@@ -10,6 +10,6 @@ public class LetEmCook : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "EnhancedInput", "UMG", "Json" });
         
-        PublicDependencyModuleNames.AddRange(new string[] { "PlayFabGSDK", "PlayFabCpp", "PlayFab" });
+        PublicDependencyModuleNames.AddRange(new string[] { "PlayFabGSDK", "PlayFabCpp", "PlayFab", "PlayFabCommon" });
     }
 }

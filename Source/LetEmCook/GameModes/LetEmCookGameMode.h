@@ -34,6 +34,17 @@ public:
 	ALetEmCookGameMode();
 
 private:
+
+	//Networking
+
+	UPROPERTY()
+	TArray<AController*> LoggedControllers;
+
+	//Collision Handling
+
+	UPROPERTY()
+	bool bHasGameBegun = false;
+
 	UPROPERTY(EditDefaultsOnly)
 	TArray<TObjectPtr<UInteractionData>> Interactions;
 	
@@ -43,9 +54,25 @@ private:
 	TSet<TObjectPtr<AActor>> ProcessedActors;
 
 public:
+
+	//Network Events
+
+	virtual void Logout(AController* Exiting) override;
+
+	virtual void OnPostLogin(AController* NewPlayer) override;
+
 	virtual void Tick(float DeltaSeconds) override;
 
+	//Collision Events
+
+	UFUNCTION(BlueprintCallable)
+	void SetGameBegun(bool bGameBegun);
+
 	void RaiseCollisionEvent(AActor* ActorA, AActor* ActorB);
+
+private:
+
+	void ProcessColision();
 
 //private:
 //
