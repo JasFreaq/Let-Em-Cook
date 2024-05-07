@@ -11,6 +11,8 @@ void AModularProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
+	GetCollisionComp()->GetChildrenComponents(false, MeshSiblings);
+
 	GetMesh()->GetChildrenComponents(true, MeshChildren);
 	MeshChildren.Add(GetMesh());
 

@@ -8,9 +8,22 @@
 void AModularProjectile_Stackable::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	Algo::Reverse(MeshChildren);
 
+	Algo::Reverse(MeshSiblings);
+	for (int i = 0; i < MeshSiblings.Num(); i++)
+	{
+		if (MeshSiblings[i] == GetMesh())
+		{
+			SiblingsLocationDifferences.Add(FVector::ZeroVector);
+		}
+		else
+		{
+			FVector LocationDifference = GetMesh()->GetComponentLocation() - MeshSiblings[i]->GetComponentLocation();
+			SiblingsLocationDifferences.Add(LocationDifference);
+		}
+	}
+
+	Algo::Reverse(MeshChildren);
 	for (int i = 0; i < MeshChildren.Num(); i++)
 	{
 		ItemRelativeLocations.Add(MeshChildren[i]->GetRelativeLocation());
@@ -123,4 +136,17 @@ void AModularProjectile_Stackable::AdjustProjectileState()
 	MeshLocation.Normalize();
 	MeshLocation *= ProjectedExtent;
 	GetMesh()->SetRelativeLocation(MeshLocation);
+
+	for (int i = 0; i < MeshSiblings.Num(); i++)
+	{
+		if (MeshSiblings[i] == GetMesh())
+		{
+			continue;
+		}
+
+		FVector LocationDifference = SiblingsLocationDifferences[i];
+		FVector SiblingLocation = GetMesh()->GetComponentLocation() + LocationDifference;
+
+		MeshSiblings[i]->SetWorldLocation(SiblingLocation);
+	}
 }

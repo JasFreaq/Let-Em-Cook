@@ -14,8 +14,7 @@ class LETEMCOOK_API AModularProjectile_Stackable : public AModularProjectile
 {
 	GENERATED_BODY()
 
-	/*UPROPERTY(EditDefaultsOnly, Category = Items)
-	TArray<TObjectPtr<UGameItemData>> ChildGameItems;*/
+	TArray<FVector> SiblingsLocationDifferences;
 
 	TArray<FVector> ItemRelativeLocations;
 

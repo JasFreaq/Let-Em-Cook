@@ -9,6 +9,7 @@
 
 class UGameItemData;
 class UInteractionData;
+class UOrderInfoData;
 class ALetEmCookCharacter;
 
 USTRUCT()
@@ -35,16 +36,33 @@ class LETEMCOOK_API AGameplayGameMode : public ALetEmCookGameMode
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly, Category = "Character Selection")
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
 	float GameTime = 600.0f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
+	TArray<TObjectPtr<UOrderInfoData>> OrdersInfo;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
+	float OrderSpawnCooldown = 30.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
+	int MaxOrders = 4;
+
 	bool bInGame = false;
+
+	float LastOrderSpawnTime = 0.0f;
+
+	// Team Management
 
 	UPROPERTY()
 	TArray<AActor*> BlueSpawnPoints;
 
 	UPROPERTY()
 	TArray<AActor*> RedSpawnPoints;
+
+	int BlueTeamPoints = 0;
+
+	int RedTeamPoints = 0;
 
 	// Collision Handling
 
@@ -55,6 +73,9 @@ class LETEMCOOK_API AGameplayGameMode : public ALetEmCookGameMode
 
 	UPROPERTY()
 	TSet<TObjectPtr<AActor>> ProcessedActors;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UOrderInfoData>> ActiveOrders;
 
 public:
 
@@ -70,9 +91,13 @@ public:
 
 	void RaiseCollisionEvent(AActor* ActorA, AActor* ActorB);
 
+	void ReceiveOrders(AActor* OrderActor);
+
 private:
 
 	FTransform GetPlayerSpawnTransform(ETeam Team);
 
-	void ProcessColision();
+	void ProcessCollision();
+
+	void AddOrderPoints(ETeam Team, int Points);
 };

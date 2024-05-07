@@ -97,21 +97,24 @@ void AItemTransmuter::OnHit(AActor* SelfActor, AActor* OtherActor, FVector Norma
 	{
 		if (OtherActor->ActorHasTag("Interactable"))
 		{
-			if (ALetEmCookProjectile* Projectile = Cast<ALetEmCookProjectile>(OtherActor); Projectile != nullptr)
+			if (CurrentlyProcessingItem == nullptr)
 			{
-				for (TObjectPtr<UTransmuteData> Transmutation : Transmutations)
+				if (ALetEmCookProjectile* Projectile = Cast<ALetEmCookProjectile>(OtherActor); Projectile != nullptr)
 				{
-					if (Projectile->GetGameItem() == Transmutation->GetSourceItem())
+					for (TObjectPtr<UTransmuteData> Transmutation : Transmutations)
 					{
-						Projectile->SetProjectileEnabled(false);
-						Multicast_InstantiateProjectileMeshRepresentation(Projectile);
+						if (Projectile->GetGameItem() == Transmutation->GetSourceItem())
+						{
+							Projectile->SetProjectileEnabled(false);
+							Multicast_InstantiateProjectileMeshRepresentation(Projectile);
 
-						CurrentlyProcessingItem = Projectile;
-						CurrentTransmutation = Transmutation;
+							CurrentlyProcessingItem = Projectile;
+							CurrentTransmutation = Transmutation;
 						
-						CurrentProcessStartTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+							CurrentProcessStartTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 
-						break;
+							break;
+						}
 					}
 				}
 			}
@@ -158,13 +161,9 @@ float AItemTransmuter::GetProcessTimeRemainingRatio() const
 
 		const float TimeRemainingRatio = (CurrentTime - CurrentProcessStartTime) / CurrentTransmutation->GetTransmuteTime();
 
-		//UE_LOG(LogTemp, Warning, TEXT("Current Time: %f, Current Process Start Time: %f, Time Remaining Ratio: %f"), CurrentTime, CurrentProcessStartTime, TimeRemainingRatio);
-
 		return TimeRemainingRatio;
 	}
-
-	//UE_LOG(LogTemp, Warning, TEXT("No item is currently being processed!"));
-
+	
 	return 0.f;
 }
 

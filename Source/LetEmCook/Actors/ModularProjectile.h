@@ -18,6 +18,8 @@ class LETEMCOOK_API AModularProjectile : public ALetEmCookProjectile
 
 protected:
 
+	TArray<TObjectPtr<USceneComponent>> MeshSiblings;
+
 	TArray<TObjectPtr<USceneComponent>> MeshChildren;
 
 private:
