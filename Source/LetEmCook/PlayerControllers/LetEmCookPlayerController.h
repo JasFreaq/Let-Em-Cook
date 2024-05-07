@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "LetEmCook/Enums/ETeam.h"
 #include "LetEmCookPlayerController.generated.h"
 
 class UPickupNotifyWidget;
@@ -30,16 +31,34 @@ class LETEMCOOK_API ALetEmCookPlayerController : public APlayerController
 	
 	bool bIsPickupWidgetVisible = false;
 
+	UPROPERTY()
+	ETeam Team;
+
+	UPROPERTY()
 	TSubclassOf<ALetEmCookCharacter> CharacterClass;
-	
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Character Selection", meta = (AllowPrivateAccess = true))
+	int CharacterSelectionScreenTimer = 0;
+
 public:
+
+	virtual void Tick(float DeltaSeconds) override;
+
+	UFUNCTION(BlueprintCallable)
+	void InitiateControllerForGame();
+
+	void SetPlayerTeam(ETeam AllottedTeam);
+
+	UFUNCTION(BlueprintCallable)
+	void SetCharacterClass(TSubclassOf<ALetEmCookCharacter> ChosenCharacterClass);
+
+	void ShowHUD();
+
+	void HideHUD();
 
 	void ShowPickupWidget(FString ItemName);
 
 	void HidePickupWidget();
-
-	UFUNCTION(BlueprintCallable)
-	void SetCharacterClass(TSubclassOf<ALetEmCookCharacter> ChosenCharacterClass);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -51,6 +70,21 @@ private:
 
 	UFUNCTION(Server, Reliable)
 	void Server_SetSessionIdOnGameInstance(const FString& Session);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetPlayerTeam(ETeam AllottedTeam);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetCharacterClass(TSubclassOf<ALetEmCookCharacter> ChosenCharacterClass);
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestCharacter();
+
+	UFUNCTION(Client, Reliable)
+	void Client_ShowHUD();
+
+	UFUNCTION(Client, Reliable)
+	void Client_HideHUD();
 
 	UFUNCTION(Client, Reliable)
 	void Client_ShowPickupWidget(const FString& ItemName);

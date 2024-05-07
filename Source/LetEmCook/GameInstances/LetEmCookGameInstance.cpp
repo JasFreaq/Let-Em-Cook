@@ -304,6 +304,8 @@ void ULetEmCookGameInstance::OnGetMatchSuccess(const FGetMatchResult& Result)
 	{
 		if (EntityToken->Entity->Id.Compare(Member.Entity.Id, ESearchCase::IgnoreCase) == 0)
 		{
+			TeamAssignment = Member.TeamId;
+
 			UE_LOG(LogPlayFabGSDKGameInstance, Warning, TEXT("Matchmaking Player: %s, Team: %s"), *Member.Entity.Id, *Member.TeamId);
 		}
 	}

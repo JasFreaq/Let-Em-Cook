@@ -3,10 +3,10 @@
 
 #include "ItemTransmuter.h"
 #include "Components/BoxComponent.h"
+#include "GameFramework/GameStateBase.h"
 #include "LetEmCook/Actors/LetEmCookProjectile.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/DataAssets/TransmuteData.h"
-#include "LetEmCook/GameStates/LetEmCookGameStateBase.h"
 #include "Net/UnrealNetwork.h"
 
 // Sets default values

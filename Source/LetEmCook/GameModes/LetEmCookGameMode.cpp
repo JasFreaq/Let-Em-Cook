@@ -2,12 +2,16 @@
 
 #include "LetEmCookGameMode.h"
 
+#include "Engine/TargetPoint.h"
+#include "GameFramework/GameStateBase.h"
+#include "Kismet/GameplayStatics.h"
 #include "LetEmCook/Actors/LetEmCookProjectile.h"
 #include "LetEmCook/Actors/ModularProjectile.h"
 #include "UObject/ConstructorHelpers.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/DataAssets/InteractionData.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "LetEmCook/Characters/LetEmCookCharacter.h"
 #include "LetEmCook/GameInstances/LetEmCookGameInstance.h"
 
 ALetEmCookGameMode::ALetEmCookGameMode(): Super()
@@ -21,21 +25,11 @@ ALetEmCookGameMode::ALetEmCookGameMode(): Super()
 	bUseSeamlessTravel = true;
 }
 
-void ALetEmCookGameMode::Logout(AController* Exiting)
+void ALetEmCookGameMode::PostSeamlessTravel()
 {
-	Super::Logout(Exiting);
+	Super::PostSeamlessTravel();
 
-	LoggedControllers.Remove(Exiting);
-
-	UE_LOG(LogTemp, Warning, TEXT("Logged Controllers: %d"), LoggedControllers.Num());
-
-	if (LoggedControllers.Num() == 0)
-	{
-		if (ULetEmCookGameInstance* GameInstance = Cast<ULetEmCookGameInstance>(GetGameInstance()); GameInstance != nullptr)
-		{
-			GameInstance->InitiateServerShutdown();
-		}
-	}
+	UE_LOG(LogTemp, Warning, TEXT("Post Seamless Travel"));
 }
 
 void ALetEmCookGameMode::OnPostLogin(AController* NewPlayer)
@@ -43,177 +37,44 @@ void ALetEmCookGameMode::OnPostLogin(AController* NewPlayer)
 	Super::OnPostLogin(NewPlayer);
 
 	UE_LOG(LogTemp, Warning, TEXT("Post Login"));
-
-	LoggedControllers.Add(NewPlayer);
-
-	UE_LOG(LogTemp, Warning, TEXT("Logged Controllers: %d"), LoggedControllers.Num());
-}
-
-void ALetEmCookGameMode::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	if (bHasGameBegun)
+	
+	ULetEmCookGameInstance* GameInstance = Cast<ULetEmCookGameInstance>(GetGameInstance());
+	if (GameInstance != nullptr)
 	{
-		ProcessColision();
+		TArray<AController*> Controllers = GameInstance->GetControllersCache();
+		Controllers.Add(NewPlayer);
+		GameInstance->SetControllersCache(Controllers);
+
+		UE_LOG(LogTemp, Warning, TEXT("Logged Controllers: %d"), GameInstance->GetControllersCache().Num());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("No Game Instance found"));
 	}
 }
 
-void ALetEmCookGameMode::SetGameBegun(bool bGameBegun)
+void ALetEmCookGameMode::Logout(AController* Exiting)
 {
-	bHasGameBegun = bGameBegun;
-}
+	Super::Logout(Exiting);
 
-void ALetEmCookGameMode::RaiseCollisionEvent(AActor* ActorA, AActor* ActorB)
-{
-	if (HasAuthority())
-	{
-		const FCollisionEventData Event(ActorA, ActorB);
-		CollisionEventsQueue.Enqueue(Event);
-	}
-}
+	UE_LOG(LogTemp, Warning, TEXT("Exiting"));
 
-void ALetEmCookGameMode::ProcessColision()
-{
-	if (HasAuthority())
+	ULetEmCookGameInstance* GameInstance = Cast<ULetEmCookGameInstance>(GetGameInstance());
+	if (GameInstance != nullptr)
 	{
-		// Process the interaction queue
-		while (!CollisionEventsQueue.IsEmpty())
+		TArray<AController*> Controllers = GameInstance->GetControllersCache();
+		Controllers.Remove(Exiting);
+		GameInstance->SetControllersCache(Controllers);
+
+		UE_LOG(LogTemp, Warning, TEXT("Logged Controllers: %d"), GameInstance->GetControllersCache().Num());
+
+		if (GameInstance->GetControllersCache().Num() == 0)
 		{
-			FCollisionEventData Event;
-			CollisionEventsQueue.Dequeue(Event);
-
-			if (ProcessedActors.Contains(Event.ActorA) || ProcessedActors.Contains(Event.ActorB))
-			{
-				continue;
-			}
-
-			TObjectPtr<UInteractionData> RaisedInteraction;
-			UGameItemData* ActorAItem;
-			UGameItemData* ActorBItem;
-
-			for (const TObjectPtr<UInteractionData> Interaction : Interactions)
-			{
-				if (Interaction->GetItemA() == nullptr || Interaction->GetItemB() == nullptr)
-				{
-					UE_LOG(LogTemp, Error, TEXT("Missing references in %s"), *Interaction->GetName());
-					continue;
-				}
-
-				if (Event.ActorA->IsA(Interaction->GetItemA()->GetProjectile())
-					&& Event.ActorB->IsA(Interaction->GetItemB()->GetProjectile()))
-				{
-					RaisedInteraction = Interaction;
-					ActorAItem = Interaction->GetItemA();
-					ActorBItem = Interaction->GetItemB();
-
-					break;
-				}
-
-				if (Event.ActorA->IsA(Interaction->GetItemB()->GetProjectile())
-					&& Event.ActorB->IsA(Interaction->GetItemA()->GetProjectile()))
-				{
-					RaisedInteraction = Interaction;
-					ActorAItem = Interaction->GetItemB();
-					ActorBItem = Interaction->GetItemA();
-
-					break;
-				}
-
-				UE_LOG(LogTemp, Warning, TEXT("No Interaction Found"));
-			}
-
-			if (RaisedInteraction != nullptr)
-			{
-				if (RaisedInteraction->IsInteractionModular())
-				{
-					if (AModularProjectile* ModularProjectile = Cast<AModularProjectile>(Event.ActorA); ModularProjectile != nullptr)
-					{
-						ModularProjectile->ProcessCollision(ActorBItem);
-
-						ProcessedActors.Add(Event.ActorB);
-					}
-					else if (ModularProjectile = Cast<AModularProjectile>(Event.ActorB); ModularProjectile != nullptr)
-					{
-						ModularProjectile->ProcessCollision(ActorAItem);
-
-						ProcessedActors.Add(Event.ActorA);
-					}
-					else
-					{
-						UE_LOG(LogTemp, Error, TEXT("No Modular Projectile found in %s"), *RaisedInteraction->GetName());
-					}
-				}
-				else
-				{
-					if (RaisedInteraction->GetResultItem() != nullptr)
-					{
-						FVector SpawnLocation = (Event.ActorA->GetActorLocation() + Event.ActorB->GetActorLocation()) / 2;
-
-						FActorSpawnParameters SpawnParams;
-						SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-						GetWorld()->SpawnActor<AActor>(RaisedInteraction->GetResultItem()->GetProjectile(), SpawnLocation, FQuat::Identity.Rotator(), SpawnParams);
-
-						ProcessedActors.Add(Event.ActorA);
-						ProcessedActors.Add(Event.ActorB);
-					}
-					else
-					{
-						UE_LOG(LogTemp, Error, TEXT("No Result Item set in %s"), *RaisedInteraction->GetName());
-					}
-				}
-			}
+			GameInstance->InitiateServerShutdown();
 		}
-
-		for (const TObjectPtr<AActor> ProcessedActor : ProcessedActors)
-		{
-			ProcessedActor->Destroy();
-		}
-
-		ProcessedActors.Empty();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("No Game Instance found"));
 	}
 }
-
-//void ALetEmCookGameMode::BeginPlay()
-//{
-//	Super::BeginPlay();
-//
-//	if (HasAuthority())
-//	{
-//		// Initialize the projectile pool
-//		for (UGameItemData* UtensilProjectile : UtensilProjectiles)
-//		{
-//			for (int i = 0; i < InitialPoolSize; i++)
-//			{
-//				if (i == 0)
-//				{
-//					TArray<TObjectPtr<ALetEmCookProjectile>> ProjectileArray;
-//					ProjectileCooldownMap.Add(UtensilProjectile->GetProjectile(), ProjectileArray);
-//				}
-//
-//				ALetEmCookProjectile* NewProjectile = GetWorld()->SpawnActor<ALetEmCookProjectile>(UtensilProjectile->GetProjectile());
-//				NewProjectile->SetActorHiddenInGame(true);
-//				NewProjectile->SetActorEnableCollision(false);
-//
-//				ProjectileCooldownMap[UtensilProjectile->GetProjectile()].Add(NewProjectile);
-//			}
-//		}
-//	}
-//}
-//
-//ALetEmCookProjectile* ALetEmCookGameMode::GetProjectileFromPool(TSubclassOf<ALetEmCookProjectile> ProjectileClass)
-//{
-//	if (ProjectileCooldownMap.Contains(ProjectileClass))
-//	{
-//		for (ALetEmCookProjectile* Projectile : ProjectileCooldownMap[ProjectileClass])
-//		{
-//			if (Projectile->IsHidden())
-//			{
-//				return Projectile;
-//			}
-//		}
-//	}
-//
-//	return nullptr;
-//}

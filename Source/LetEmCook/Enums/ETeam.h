@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ETeam.generated.h"
 
 UENUM(BlueprintType)

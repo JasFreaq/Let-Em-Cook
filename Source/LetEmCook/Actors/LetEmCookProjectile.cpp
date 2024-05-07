@@ -5,6 +5,7 @@
 #include "LetEmCook/GameModes/LetEmCookGameMode.h"
 #include "GameplayTags/Classes/GameplayTagsManager.h"
 #include "GameplayTags/Classes/GameplayTagContainer.h"
+#include "LetEmCook/GameModes/GameplayGameMode.h"
 
 ALetEmCookProjectile::ALetEmCookProjectile() 
 {
@@ -69,7 +70,7 @@ void ALetEmCookProjectile::SendCollisionEventToGameMode(AActor* SelfActor, AActo
 {
 	if (HasAuthority())
 	{
-		ALetEmCookGameMode* GameMode = GetWorld()->GetAuthGameMode<ALetEmCookGameMode>();
+		AGameplayGameMode* GameMode = GetWorld()->GetAuthGameMode<AGameplayGameMode>();
 		if (GameMode != nullptr)
 		{
 			GameMode->RaiseCollisionEvent(SelfActor, OtherActor);

@@ -10,6 +10,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/BoxComponent.h"
 #include "Engine/DamageEvents.h"
+#include "GameFramework/GameStateBase.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
@@ -17,7 +18,6 @@
 #include "LetEmCook/Interfaces/Interactable.h"
 #include "LetEmCook/ActorComponents/DamageComponent.h"
 #include "LetEmCook/ActorComponents/HealthComponent.h"
-#include "LetEmCook/GameStates/LetEmCookGameStateBase.h"
 
 
 //////////////////////////////////////////////////////////////////////////

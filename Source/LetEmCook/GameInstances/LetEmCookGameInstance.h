@@ -30,7 +30,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Play Fab Custom | Matchmaking", meta = (AllowPrivateAccess = true))
 	FString QueueName = "TestQueue1";
-
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Play Fab Custom | Matchmaking", meta = (AllowPrivateAccess = true))
 	float FindMatchTime = 12.f;
 
@@ -50,7 +50,12 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = "Play Fab Custom | Matchmaking", meta = (AllowPrivateAccess = true))
 	FString MatchmakingStatus;
 
+	FString TeamAssignment;
+
 	FTimerHandle FindMatchTimerHandle;
+
+	UPROPERTY()
+	TArray<AController*> LoggedControllersCache;
 
 public:
 
@@ -76,6 +81,12 @@ public:
 	const FString& GetSessionId() const { return MatchId; }
 
 	void SetSessionId(const FString& Session);
+
+	TArray<AController*> GetControllersCache() { return LoggedControllersCache; }
+
+	void SetControllersCache(TArray<AController*> Controllers) { LoggedControllersCache = Controllers; }
+	
+	const FString& GetTeam() const { return TeamAssignment; }
 
 protected:
 
