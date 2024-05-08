@@ -68,7 +68,9 @@ void ALetEmCookPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 
 	DOREPLIFETIME(ALetEmCookPlayerController, HUDWidgetInstance);
 	DOREPLIFETIME(ALetEmCookPlayerController, PickupWidgetInstance);
-	
+
+	DOREPLIFETIME(ALetEmCookPlayerController, Team);
+
 	DOREPLIFETIME(ALetEmCookPlayerController, CharacterSelectionScreenTimer);
 }
 

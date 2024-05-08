@@ -10,6 +10,7 @@
 class UBoxComponent;
 class UStaticMeshComponent;
 class UGameItemData;
+class ALetEmCookCharacter;
 
 UCLASS(config=Game)
 class ALetEmCookProjectile : public AActor, public IInteractable
@@ -35,6 +36,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
 	TObjectPtr<UGameItemData> GameItemData;
 
+	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	TObjectPtr<ALetEmCookCharacter> OwnerCharacter;
+
 public:
 
 	// Function to be called when hit
@@ -49,6 +53,10 @@ public:
 	virtual TObjectPtr<UGameItemData> GetGameItem() const override { return GameItemData; }
 
 	virtual ALetEmCookProjectile* GetProjectile() override { return this; }
+
+	TObjectPtr<ALetEmCookCharacter> GetOwnerCharacter() const { return OwnerCharacter; }
+
+	void SetOwnerCharacter(TObjectPtr<ALetEmCookCharacter> Character) { OwnerCharacter = Character; }
 
 	void AddImpulseToProjectile(FVector ImpulseDirection) const;
 

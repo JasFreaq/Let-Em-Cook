@@ -24,7 +24,7 @@ class LETEMCOOK_API UOrderInfoData : public UDataAsset
 
 public:
 
-	TObjectPtr<UGameItemData> GetItemA() const { return OrderItem; }
+	TObjectPtr<UGameItemData> GetOrderItem() const { return OrderItem; }
 
 	int GetPoints() const { return Points; }
 };

@@ -31,7 +31,7 @@ class LETEMCOOK_API ALetEmCookPlayerController : public APlayerController
 	
 	bool bIsPickupWidgetVisible = false;
 
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	ETeam Team;
 
 	UPROPERTY()
@@ -51,6 +51,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void SetCharacterClass(TSubclassOf<ALetEmCookCharacter> ChosenCharacterClass);
+
+	ETeam GetPlayerTeam() { return Team; }
 
 	void ShowHUD();
 

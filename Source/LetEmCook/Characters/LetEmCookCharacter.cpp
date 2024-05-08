@@ -309,10 +309,26 @@ void ALetEmCookCharacter::OnBeginOverlap(UPrimitiveComponent* OverlappedComponen
 		const UDamageComponent* DamageComponent = OtherActor->FindComponentByClass<UDamageComponent>();
 		if (DamageComponent != nullptr)
 		{
-			if (IsLocallyControlled())
+			ALetEmCookProjectile* Projectile = Cast<ALetEmCookProjectile>(OtherActor);
+			if (Projectile != nullptr)
 			{
-				FDamageEvent DamageEvent;
-				TakeDamage(DamageComponent->GetDamage(), DamageEvent, nullptr, OtherActor);
+				ALetEmCookCharacter* OwnerCharacter = Projectile->GetOwnerCharacter();
+				if (OwnerCharacter != nullptr)
+				{
+					ALetEmCookPlayerController* OtherController = Cast<ALetEmCookPlayerController>(OwnerCharacter->GetController());
+					ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
+
+					UE_LOG(LogTemp, Warning, TEXT("TeamA: %d has been hit by TeamB: %d"), OtherController->GetPlayerTeam(), PlayerController->GetPlayerTeam());
+
+					if (OtherController->GetPlayerTeam() != PlayerController->GetPlayerTeam())
+					{
+						if (IsLocallyControlled())
+						{
+							FDamageEvent DamageEvent;
+							TakeDamage(DamageComponent->GetDamage(), DamageEvent, nullptr, OtherActor);
+						}
+					}
+				}
 			}
 		}
 	}
@@ -354,6 +370,7 @@ void ALetEmCookCharacter::LaunchProjectile()
 						Multicast_HandleProjectileThrown();
 
 						Projectile->AddImpulseToProjectile(SpawnRotation.Vector());
+						Projectile->SetOwnerCharacter(this);
 					}
 				}
 			}
@@ -682,35 +699,6 @@ void ALetEmCookCharacter::OnPickedUpIngredient()
 
 		HeldIngredientRepresentationMesh = InstantiateRepresentationMesh(CurrentlyHeldIngredient->GetGameItem()->GetHeldMesh());
 		HeldIngredientRepresentationMesh->GetProjectileMesh()->SetVisibility(true, true);
-
-		/*USceneComponent* AttachMesh = nullptr;
-		if (IsLocallyControlled())
-		{
-			AttachMesh = Mesh1P;
-		}
-		else
-		{
-			AttachMesh = GetMesh();
-		}
-		
-		USceneComponent* ProjectileMesh = CurrentlyHeldIngredient->GetMesh();
-		ProjectileMesh->AttachToComponent(AttachMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, HandSocketName);
-				
-		FRotator PivotWorldRotation = ProjectileMesh->GetSocketRotation(FName("HoldPivot"));
-		FQuat PivotLocalRotation = ProjectileMesh->GetComponentTransform().InverseTransformRotation(PivotWorldRotation.Quaternion());
-
-		ProjectileMesh->SetRelativeRotation(PivotLocalRotation);
-
-		FVector ProjectileLocation = ProjectileMesh->GetComponentLocation();
-		FVector PivotLocation = ProjectileMesh->GetSocketLocation(FName("HoldPivot"));
-
-		FVector ProjectilePivotOffset = ProjectileLocation - PivotLocation;
-
-		FVector MeshSocketLocation = AttachMesh->GetSocketLocation(HandSocketName);
-
-		ProjectileMesh->SetWorldLocation(MeshSocketLocation + ProjectilePivotOffset);
-
-		ProjectileMesh->SetVisibility(true);*/
 	}
 }
 
@@ -733,14 +721,20 @@ void ALetEmCookCharacter::DropHeldIngredient(bool bUseCameraRotation, bool bLaun
 //////////////////////////////////////////////////////////////////////////
 // Health System
 
-float ALetEmCookCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator,
-	AActor* DamageCauser)
+float ALetEmCookCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	if (HasAuthority())
 	{
 		HealthComponent->ApplyDamage(DamageAmount);
 
-		DamageCauser->Destroy();
+		if (DamageCauser != nullptr)
+		{
+			DamageCauser->Destroy();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Damage Causer is null."));
+		}
 	}
 	else
 	{

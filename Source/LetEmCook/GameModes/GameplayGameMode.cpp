@@ -9,6 +9,8 @@
 #include "LetEmCook/Actors/ModularProjectile.h"
 #include "LetEmCook/Characters/LetEmCookCharacter.h"
 #include "LetEmCook/DataAssets/InteractionData.h"
+#include "LetEmCook/DataAssets/OrderInfoData.h"
+#include "LetEmCook/PlayerControllers/LetEmCookPlayerController.h"
 
 void AGameplayGameMode::Tick(float DeltaSeconds)
 {
@@ -17,6 +19,7 @@ void AGameplayGameMode::Tick(float DeltaSeconds)
 	if (bInGame)
 	{
 		const float CurrentTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+
 		if (CurrentTime - CurrentMapInitTime >= GameTime)
 		{
 			bInGame = false;
@@ -24,7 +27,18 @@ void AGameplayGameMode::Tick(float DeltaSeconds)
 			UE_LOG(LogTemp, Warning, TEXT("Game Over"));
 		}
 
-		ProcessColision();
+		if (CurrentTime - LastOrderSpawnTime >= OrderSpawnCooldown)
+		{
+			if (ActiveOrders.Num() < MaxOrders)
+			{
+
+				ActiveOrders.Add(OrdersInfo[FMath::RandRange(0, OrdersInfo.Num() - 1)]);
+
+				LastOrderSpawnTime = CurrentTime;
+			}
+		}
+
+		ProcessCollision();
 	}
 }
 
@@ -67,22 +81,41 @@ void AGameplayGameMode::RaiseCollisionEvent(AActor* ActorA, AActor* ActorB)
 	}
 }
 
+void AGameplayGameMode::ReceiveOrders(AActor* OrderActor)
+{
+	for (TObjectPtr<UOrderInfoData> OrderInfo : ActiveOrders)
+	{
+		ALetEmCookProjectile* OrderItem = Cast<ALetEmCookProjectile>(OrderActor);
+		if (OrderInfo->GetOrderItem() == OrderItem->GetGameItem())
+		{
+			ALetEmCookCharacter* Character = OrderItem->GetOwnerCharacter();
+
+			ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Character->GetController());
+			if (PlayerController != nullptr)
+			{
+				AGameplayGameMode* GameMode = Cast<AGameplayGameMode>(GetWorld()->GetAuthGameMode());
+				GameMode->AddOrderPoints(PlayerController->GetPlayerTeam(), OrderInfo->GetPoints());
+			}
+		}
+	}
+}
+
 FTransform AGameplayGameMode::GetPlayerSpawnTransform(ETeam Team)
 {
 	switch (Team)
 	{
-	case ETeam::Blue:
-		return BlueSpawnPoints[FMath::RandRange(0, BlueSpawnPoints.Num() - 1)]->GetActorTransform();
+		case ETeam::Blue:
+			return BlueSpawnPoints[FMath::RandRange(0, BlueSpawnPoints.Num() - 1)]->GetActorTransform();
 
-	case ETeam::Red:
-		return RedSpawnPoints[FMath::RandRange(0, RedSpawnPoints.Num() - 1)]->GetActorTransform();
+		case ETeam::Red:
+			return RedSpawnPoints[FMath::RandRange(0, RedSpawnPoints.Num() - 1)]->GetActorTransform();
 	}
 
 	UE_LOG(LogTemp, Error, TEXT("No Team found"));
 	return FTransform();
 }
 
-void AGameplayGameMode::ProcessColision()
+void AGameplayGameMode::ProcessCollision()
 {
 	if (HasAuthority())
 	{
@@ -181,5 +214,19 @@ void AGameplayGameMode::ProcessColision()
 		}
 
 		ProcessedActors.Empty();
+	}
+}
+
+void AGameplayGameMode::AddOrderPoints(ETeam Team, int Points)
+{
+	switch (Team)
+	{
+		case ETeam::Blue:
+			BlueTeamPoints += Points;
+			break;
+
+		case ETeam::Red:
+			RedTeamPoints += Points;
+			break;
 	}
 }
