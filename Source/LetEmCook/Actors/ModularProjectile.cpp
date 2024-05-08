@@ -25,9 +25,36 @@ void AModularProjectile::BeginPlay()
 	}
 }
 
+void AModularProjectile::Multicast_SetProjectileEnabled_Implementation(bool bIsEnabled)
+{
+	Super::Multicast_SetProjectileEnabled_Implementation(bIsEnabled);
+
+	if (bIsEnabled)
+	{
+		for (TObjectPtr<USceneComponent> SceneComponent : MeshChildren)
+		{
+			if (UProjectileSubobjectMeshComponent* Subobject = Cast<UProjectileSubobjectMeshComponent>(SceneComponent); Subobject != nullptr)
+			{
+				if (!ItemsPossessed.Contains(Subobject->GetGameItem()))
+				{
+					Subobject->SetVisibility(false);
+				}
+			}
+		}
+	}
+}
+
 void AModularProjectile::InitializeProjectile(TArray<UGameItemData*> GameItems)
 {
+	TArray<UGameItemData*> GameItemsIncludingComposites;
+
 	for (UGameItemData* GameItem : GameItems)
+	{
+		GameItemsIncludingComposites.Add(GameItem);
+		GameItemsIncludingComposites.Append(GameItem->GetCompositeGameItems());
+	}
+
+	for (UGameItemData* GameItem : GameItemsIncludingComposites)
 	{
 		UpdateProjectile(GameItem);
 	}
@@ -93,3 +120,5 @@ void AModularProjectile::Multicast_ApplyUpdateEffects_Implementation(UProjectile
 
 	AdjustProjectileState();
 }
+
+void AModularProjectile::AdjustProjectileState() { }

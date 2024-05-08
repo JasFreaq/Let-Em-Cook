@@ -66,13 +66,10 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetProjectileEnabled(bool bIsEnabled);
+
 private:
 
 	void SendCollisionEventToGameMode(AActor* SelfActor, AActor* OtherActor);
-
-	UFUNCTION(Server, Reliable)
-	void Server_SendCollisionEventToGameMode(AActor* SelfActor, AActor* OtherActor);
-	
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_SetProjectileEnabled(bool bIsEnabled);
 };

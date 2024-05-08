@@ -12,7 +12,7 @@ class UProjectileSubobjectMeshComponent;
 /**
  * 
  */
-UCLASS(Abstract)
+UCLASS()
 class LETEMCOOK_API AModularProjectile : public ALetEmCookProjectile
 {
 	GENERATED_BODY()
@@ -39,7 +39,9 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	virtual void AdjustProjectileState() PURE_VIRTUAL(AModularProjectile::AdjustProjectileState, );
+	virtual void Multicast_SetProjectileEnabled_Implementation(bool bIsEnabled) override;
+
+	virtual void AdjustProjectileState();
 
 private:
 

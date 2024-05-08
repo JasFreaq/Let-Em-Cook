@@ -163,32 +163,8 @@ void AGameplayGameMode::ProcessCollision()
 			UGameItemData* ProjectileBItem;
 
 			for (const TObjectPtr<UInteractionData> Interaction : Interactions)
-			{
-				// Ensure that all references are valid
-
-				bool bAreReferencesMissing = false;
+			{				
 				if (Interaction->GetItemA() == nullptr || Interaction->GetItemB() == nullptr)
-				{
-					bAreReferencesMissing = bAreReferencesMissing || true;
-				}
-				
-				for (TObjectPtr<UGameItemData> CompositeItem : Interaction->GetItemA()->GetCompositeGameItems())
-				{
-					if (CompositeItem == nullptr)
-					{
-						bAreReferencesMissing = bAreReferencesMissing || true;
-					}
-				}
-
-				for (TObjectPtr<UGameItemData> CompositeItem : Interaction->GetItemB()->GetCompositeGameItems())
-				{
-					if (CompositeItem == nullptr)
-					{
-						bAreReferencesMissing = bAreReferencesMissing || true;
-					}
-				}
-
-				if (bAreReferencesMissing)
 				{
 					UE_LOG(LogTemp, Error, TEXT("Missing references in %s"), *Interaction->GetName());
 					continue;
@@ -196,59 +172,49 @@ void AGameplayGameMode::ProcessCollision()
 
 				// Interaction lookup
 
-				if (Event.ProjectileA->GetGameItem() == Interaction->GetItemA()
-					&& Event.ProjectileB->GetGameItem() == Interaction->GetItemB())
-				{
-					ProjectileAItem = Event.ProjectileA->GetGameItem();
-					ProjectileBItem = Event.ProjectileB->GetGameItem();
-					RaisedInteraction = Interaction;
-					break;
-				}
+				TArray<TObjectPtr<UGameItemData>> ProjectileALookup;
+				ProjectileALookup.Add(Event.ProjectileA->GetGameItem());
+				ProjectileALookup.Append(Event.ProjectileA->GetGameItem()->GetCompositeGameItems());
 
-				if (Event.ProjectileA->GetGameItem() == Interaction->GetItemB()
-					&& Event.ProjectileB->GetGameItem() == Interaction->GetItemA())
+				TArray<TObjectPtr<UGameItemData>> ProjectileBLookup;
+				ProjectileBLookup.Add(Event.ProjectileB->GetGameItem());
+				ProjectileBLookup.Append(Event.ProjectileB->GetGameItem()->GetCompositeGameItems());
+				
+				for (TObjectPtr<UGameItemData> ItemA : ProjectileALookup)
 				{
-					ProjectileAItem = Event.ProjectileA->GetGameItem();
-					ProjectileBItem = Event.ProjectileB->GetGameItem();
-					RaisedInteraction = Interaction;
-					break;
-				}
-
-				for (TObjectPtr<UGameItemData> ProjectileAComposite : Event.ProjectileA->GetGameItem()->GetCompositeGameItems())
-				{
-					for (TObjectPtr<UGameItemData> ProjectileBComposite : Event.ProjectileB->GetGameItem()->GetCompositeGameItems())
+					for (TObjectPtr<UGameItemData> ItemB : ProjectileBLookup)
 					{
-						if (ProjectileAComposite == Interaction->GetItemA()
-							&& ProjectileBComposite == Interaction->GetItemB())
+						if (ItemA == Interaction->GetItemA()
+							&& ItemB == Interaction->GetItemB())
 						{
-							ProjectileAItem = ProjectileAComposite;
-							ProjectileBItem = ProjectileBComposite;
+							ProjectileAItem = ItemA;
+							ProjectileBItem = ItemB;
 							RaisedInteraction = Interaction;
 							break;
 						}
 					}
 				}
 
-				for (TObjectPtr<UGameItemData> ProjectileAComposite : Event.ProjectileA->GetGameItem()->GetCompositeGameItems())
+				for (TObjectPtr<UGameItemData> ItemA : ProjectileALookup)
 				{
-					for (TObjectPtr<UGameItemData> ProjectileBComposite : Event.ProjectileB->GetGameItem()->GetCompositeGameItems())
+					for (TObjectPtr<UGameItemData> ItemB : ProjectileBLookup)
 					{
-						if (ProjectileAComposite == Interaction->GetItemB()
-							&& ProjectileBComposite == Interaction->GetItemA())
+						if (ItemA == Interaction->GetItemB()
+							&& ItemB == Interaction->GetItemA())
 						{
-							ProjectileAItem = ProjectileAComposite;
-							ProjectileBItem = ProjectileBComposite;
+							ProjectileAItem = ItemA;
+							ProjectileBItem = ItemB;
 							RaisedInteraction = Interaction;
 							break;
 						}
 					}
 				}
-
-				UE_LOG(LogTemp, Warning, TEXT("No Interaction Found"));
 			}
 
 			if (RaisedInteraction != nullptr)
 			{
+				UE_LOG(LogTemp, Warning, TEXT("Interaction Found: %s"), *RaisedInteraction->GetName());
+
 				if (RaisedInteraction->IsInteractionModular())
 				{
 					if (AModularProjectile* ModularProjectile = Cast<AModularProjectile>(Event.ProjectileA); ModularProjectile != nullptr)
@@ -298,6 +264,10 @@ void AGameplayGameMode::ProcessCollision()
 						UE_LOG(LogTemp, Error, TEXT("No Result Item set in %s"), *RaisedInteraction->GetName());
 					}
 				}
+			}
+			else
+			{
+								UE_LOG(LogTemp, Error, TEXT("No Interaction Found"));
 			}
 		}
 

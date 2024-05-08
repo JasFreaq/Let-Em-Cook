@@ -47,13 +47,16 @@ void ALetEmCookProjectile::BeginPlay()
 
 void ALetEmCookProjectile::OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (OtherActor->Tags.Contains(FName("Projectile")))
+	if (HasAuthority())
 	{
-		SendCollisionEventToGameMode(SelfActor, OtherActor);
-	}
-	else
-	{
-		CollisionComp->ClearMoveIgnoreActors();
+		if (OtherActor->Tags.Contains(FName("Projectile")))
+		{
+			SendCollisionEventToGameMode(SelfActor, OtherActor);
+		}
+		else
+		{
+			CollisionComp->ClearMoveIgnoreActors();
+		}
 	}
 }
 
@@ -69,27 +72,15 @@ void ALetEmCookProjectile::SetProjectileEnabled(bool bIsEnabled)
 
 void ALetEmCookProjectile::SendCollisionEventToGameMode(AActor* SelfActor, AActor* OtherActor)
 {
-	if (HasAuthority())
+	ALetEmCookProjectile* OtherProjectile = Cast<ALetEmCookProjectile>(OtherActor);
+	if (OtherProjectile != nullptr)
 	{
-		ALetEmCookProjectile* OtherProjectile = Cast<ALetEmCookProjectile>(OtherActor);
-		if (OtherProjectile != nullptr)
+		AGameplayGameMode* GameMode = GetWorld()->GetAuthGameMode<AGameplayGameMode>();
+		if (GameMode != nullptr)
 		{
-			AGameplayGameMode* GameMode = GetWorld()->GetAuthGameMode<AGameplayGameMode>();
-			if (GameMode != nullptr)
-			{
-				GameMode->RaiseCollisionEvent(this, OtherProjectile);
-			}
+			GameMode->RaiseCollisionEvent(this, OtherProjectile);
 		}
 	}
-	else
-	{
-		Server_SendCollisionEventToGameMode(SelfActor, OtherActor);
-	}
-}
-
-void ALetEmCookProjectile::Server_SendCollisionEventToGameMode_Implementation(AActor* SelfActor, AActor* OtherActor)
-{
-	SendCollisionEventToGameMode(SelfActor, OtherActor);
 }
 
 void ALetEmCookProjectile::Multicast_SetProjectileEnabled_Implementation(bool bIsEnabled)
