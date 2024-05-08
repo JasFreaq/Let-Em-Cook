@@ -4,17 +4,12 @@
 
 #include "Engine/TargetPoint.h"
 #include "GameFramework/GameStateBase.h"
-#include "Kismet/GameplayStatics.h"
-#include "LetEmCook/Actors/LetEmCookProjectile.h"
-#include "LetEmCook/Actors/ModularProjectile.h"
 #include "UObject/ConstructorHelpers.h"
-#include "LetEmCook/DataAssets/GameItemData.h"
-#include "LetEmCook/DataAssets/InteractionData.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "LetEmCook/Characters/LetEmCookCharacter.h"
 #include "LetEmCook/GameInstances/LetEmCookGameInstance.h"
 
-ALetEmCookGameMode::ALetEmCookGameMode(): Super()
+ALetEmCookGameMode::ALetEmCookGameMode() : Super()
 {
 	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClassFinder(TEXT("/Game/_Game/Blueprints/Characters/BP_CharacterBase"));

@@ -7,6 +7,7 @@
 #include "ModularProjectile.generated.h"
 
 class UGameItemData;
+class UProjectileSubobjectMeshComponent;
 
 /**
  * 
@@ -28,7 +29,11 @@ private:
 
 public:
 
+	void InitializeProjectile(TArray<UGameItemData*> GameItems);
+
 	void ProcessCollision(TObjectPtr<UGameItemData> GameItem);
+
+	TArray<TObjectPtr<USceneComponent>> GetActiveChildren() const;
 
 protected:
 
@@ -38,6 +43,8 @@ protected:
 
 private:
 
+	void UpdateProjectile(TObjectPtr<UGameItemData> GameItem);
+
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_ApplyCollisionEffects(USceneComponent* Subobject);
+	void Multicast_ApplyUpdateEffects(UProjectileSubobjectMeshComponent* Subobject);
 };

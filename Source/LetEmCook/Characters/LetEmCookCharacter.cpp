@@ -18,6 +18,7 @@
 #include "LetEmCook/Interfaces/Interactable.h"
 #include "LetEmCook/ActorComponents/DamageComponent.h"
 #include "LetEmCook/ActorComponents/HealthComponent.h"
+#include "LetEmCook/Actors/ModularProjectile.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -689,6 +690,7 @@ void ALetEmCookCharacter::PickupIngredient()
 					CurrentlyHeldIngredient = ProjectileToHold;
 					CurrentlyOverlappedIngredient = nullptr;
 					CurrentlyHeldIngredient->SetProjectileEnabled(false);
+					CurrentlyHeldIngredient->SetOwnerCharacter(this);
 
 					OnPickedUpIngredient();
 				}
@@ -746,6 +748,29 @@ void ALetEmCookCharacter::OnPickedUpIngredient()
 		HandleHeldMeshVisibility(true);
 
 		HeldIngredientRepresentationMesh = InstantiateRepresentationMesh(CurrentlyHeldIngredient->GetGameItem()->GetHeldMesh());
+
+		if (const AModularProjectile* ModularProjectile = Cast<AModularProjectile>(CurrentlyHeldIngredient); ModularProjectile != nullptr)
+		{
+			TArray<TObjectPtr<USceneComponent>> MeshChildren = ModularProjectile->GetActiveChildren();
+			
+			for (USceneComponent* MeshChild : MeshChildren)
+			{
+				const UStaticMeshComponent* ChildStaticMesh = Cast<UStaticMeshComponent>(MeshChild);
+
+				UStaticMeshComponent* HeldChildStaticMesh = Cast<UStaticMeshComponent>(HeldIngredientRepresentationMesh->AddComponentByClass(
+					UStaticMeshComponent::StaticClass(), true, FTransform(), true));
+
+				HeldChildStaticMesh->AttachToComponent(HeldIngredientRepresentationMesh->GetProjectileMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale);
+				HeldChildStaticMesh->SetRelativeLocation(MeshChild->GetRelativeLocation());
+				HeldChildStaticMesh->SetRelativeRotation(MeshChild->GetRelativeRotation());
+				HeldChildStaticMesh->SetRelativeScale3D(MeshChild->GetRelativeScale3D());
+
+				HeldChildStaticMesh->SetStaticMesh(ChildStaticMesh->GetStaticMesh());
+
+				HeldChildStaticMesh->RegisterComponent();
+			}
+		}
+
 		HeldIngredientRepresentationMesh->GetProjectileMesh()->SetVisibility(true, true);
 	}
 }

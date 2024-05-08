@@ -3,6 +3,7 @@
 
 #include "OrderReceiver.h"
 
+#include "LetEmCookProjectile.h"
 #include "Components/BoxComponent.h"
 #include "LetEmCook/Characters/LetEmCookCharacter.h"
 #include "LetEmCook/GameModes/GameplayGameMode.h"
@@ -31,18 +32,19 @@ AOrderReceiver::AOrderReceiver()
 	ReceiverMesh->SetRelativeLocation(FVector(0.f, 0.f, -60.f));
 	ReceiverMesh->BodyInstance.SetCollisionProfileName("NoCollision");
 	ReceiverMesh->CanCharacterStepUpOn = ECB_No;
-
-	Tags.Add(FName("Interactable"));
 }
 
 void AOrderReceiver::OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (HasAuthority())
 	{
-		if (OtherActor->ActorHasTag("Interactable"))
+		if (OtherActor->ActorHasTag("Projectile"))
 		{
-			AGameplayGameMode* GameMode = Cast<AGameplayGameMode>(GetWorld()->GetAuthGameMode());
-			GameMode->ReceiveOrders(OtherActor);
+			if (ALetEmCookProjectile* Projectile = Cast<ALetEmCookProjectile>(OtherActor); Projectile != nullptr)
+			{
+				AGameplayGameMode* GameMode = Cast<AGameplayGameMode>(GetWorld()->GetAuthGameMode());
+				GameMode->ReceiveOrders(Projectile);
+			}
 		}
 	}
 }

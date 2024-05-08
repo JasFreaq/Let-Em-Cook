@@ -100,20 +100,20 @@ void AGameplayGameMode::SpawnSpectator(ALetEmCookPlayerController* Player, const
 	Player->Possess(Cast<APawn>(SpawnedCharacter));
 }
 
-void AGameplayGameMode::RaiseCollisionEvent(AActor* ActorA, AActor* ActorB)
+void AGameplayGameMode::RaiseCollisionEvent(ALetEmCookProjectile* ProjectileA, ALetEmCookProjectile* ProjectileB)
 {
 	if (HasAuthority())
 	{
-		const FCollisionEventData Event(ActorA, ActorB);
+		const FCollisionEventData Event(ProjectileA, ProjectileB);
 		CollisionEventsQueue.Enqueue(Event);
 	}
 }
 
-void AGameplayGameMode::ReceiveOrders(AActor* OrderActor)
+void AGameplayGameMode::ReceiveOrders(ALetEmCookProjectile* Order)
 {
 	for (TObjectPtr<UOrderInfoData> OrderInfo : ActiveOrders)
 	{
-		ALetEmCookProjectile* OrderItem = Cast<ALetEmCookProjectile>(OrderActor);
+		ALetEmCookProjectile* OrderItem = Cast<ALetEmCookProjectile>(Order);
 		if (OrderInfo->GetOrderItem() == OrderItem->GetGameItem())
 		{
 			ALetEmCookCharacter* Character = OrderItem->GetOwnerCharacter();
@@ -153,41 +153,95 @@ void AGameplayGameMode::ProcessCollision()
 			FCollisionEventData Event;
 			CollisionEventsQueue.Dequeue(Event);
 
-			if (ProcessedActors.Contains(Event.ActorA) || ProcessedActors.Contains(Event.ActorB))
+			if (ProcessedActors.Contains(Event.ProjectileA) || ProcessedActors.Contains(Event.ProjectileB))
 			{
 				continue;
 			}
 
 			TObjectPtr<UInteractionData> RaisedInteraction;
-			UGameItemData* ActorAItem;
-			UGameItemData* ActorBItem;
+			UGameItemData* ProjectileAItem;
+			UGameItemData* ProjectileBItem;
 
 			for (const TObjectPtr<UInteractionData> Interaction : Interactions)
 			{
+				// Ensure that all references are valid
+
+				bool bAreReferencesMissing = false;
 				if (Interaction->GetItemA() == nullptr || Interaction->GetItemB() == nullptr)
+				{
+					bAreReferencesMissing = bAreReferencesMissing || true;
+				}
+				
+				for (TObjectPtr<UGameItemData> CompositeItem : Interaction->GetItemA()->GetCompositeGameItems())
+				{
+					if (CompositeItem == nullptr)
+					{
+						bAreReferencesMissing = bAreReferencesMissing || true;
+					}
+				}
+
+				for (TObjectPtr<UGameItemData> CompositeItem : Interaction->GetItemB()->GetCompositeGameItems())
+				{
+					if (CompositeItem == nullptr)
+					{
+						bAreReferencesMissing = bAreReferencesMissing || true;
+					}
+				}
+
+				if (bAreReferencesMissing)
 				{
 					UE_LOG(LogTemp, Error, TEXT("Missing references in %s"), *Interaction->GetName());
 					continue;
 				}
 
-				if (Event.ActorA->IsA(Interaction->GetItemA()->GetProjectile())
-					&& Event.ActorB->IsA(Interaction->GetItemB()->GetProjectile()))
-				{
-					RaisedInteraction = Interaction;
-					ActorAItem = Interaction->GetItemA();
-					ActorBItem = Interaction->GetItemB();
+				// Interaction lookup
 
+				if (Event.ProjectileA->GetGameItem() == Interaction->GetItemA()
+					&& Event.ProjectileB->GetGameItem() == Interaction->GetItemB())
+				{
+					ProjectileAItem = Event.ProjectileA->GetGameItem();
+					ProjectileBItem = Event.ProjectileB->GetGameItem();
+					RaisedInteraction = Interaction;
 					break;
 				}
 
-				if (Event.ActorA->IsA(Interaction->GetItemB()->GetProjectile())
-					&& Event.ActorB->IsA(Interaction->GetItemA()->GetProjectile()))
+				if (Event.ProjectileA->GetGameItem() == Interaction->GetItemB()
+					&& Event.ProjectileB->GetGameItem() == Interaction->GetItemA())
 				{
+					ProjectileAItem = Event.ProjectileA->GetGameItem();
+					ProjectileBItem = Event.ProjectileB->GetGameItem();
 					RaisedInteraction = Interaction;
-					ActorAItem = Interaction->GetItemB();
-					ActorBItem = Interaction->GetItemA();
-
 					break;
+				}
+
+				for (TObjectPtr<UGameItemData> ProjectileAComposite : Event.ProjectileA->GetGameItem()->GetCompositeGameItems())
+				{
+					for (TObjectPtr<UGameItemData> ProjectileBComposite : Event.ProjectileB->GetGameItem()->GetCompositeGameItems())
+					{
+						if (ProjectileAComposite == Interaction->GetItemA()
+							&& ProjectileBComposite == Interaction->GetItemB())
+						{
+							ProjectileAItem = ProjectileAComposite;
+							ProjectileBItem = ProjectileBComposite;
+							RaisedInteraction = Interaction;
+							break;
+						}
+					}
+				}
+
+				for (TObjectPtr<UGameItemData> ProjectileAComposite : Event.ProjectileA->GetGameItem()->GetCompositeGameItems())
+				{
+					for (TObjectPtr<UGameItemData> ProjectileBComposite : Event.ProjectileB->GetGameItem()->GetCompositeGameItems())
+					{
+						if (ProjectileAComposite == Interaction->GetItemB()
+							&& ProjectileBComposite == Interaction->GetItemA())
+						{
+							ProjectileAItem = ProjectileAComposite;
+							ProjectileBItem = ProjectileBComposite;
+							RaisedInteraction = Interaction;
+							break;
+						}
+					}
 				}
 
 				UE_LOG(LogTemp, Warning, TEXT("No Interaction Found"));
@@ -197,17 +251,17 @@ void AGameplayGameMode::ProcessCollision()
 			{
 				if (RaisedInteraction->IsInteractionModular())
 				{
-					if (AModularProjectile* ModularProjectile = Cast<AModularProjectile>(Event.ActorA); ModularProjectile != nullptr)
+					if (AModularProjectile* ModularProjectile = Cast<AModularProjectile>(Event.ProjectileA); ModularProjectile != nullptr)
 					{
-						ModularProjectile->ProcessCollision(ActorBItem);
+						ModularProjectile->ProcessCollision(ProjectileBItem);
 
-						ProcessedActors.Add(Event.ActorB);
+						ProcessedActors.Add(Event.ProjectileB);
 					}
-					else if (ModularProjectile = Cast<AModularProjectile>(Event.ActorB); ModularProjectile != nullptr)
+					else if (ModularProjectile = Cast<AModularProjectile>(Event.ProjectileB); ModularProjectile != nullptr)
 					{
-						ModularProjectile->ProcessCollision(ActorAItem);
+						ModularProjectile->ProcessCollision(ProjectileAItem);
 
-						ProcessedActors.Add(Event.ActorA);
+						ProcessedActors.Add(Event.ProjectileA);
 					}
 					else
 					{
@@ -218,15 +272,26 @@ void AGameplayGameMode::ProcessCollision()
 				{
 					if (RaisedInteraction->GetResultItem() != nullptr)
 					{
-						FVector SpawnLocation = (Event.ActorA->GetActorLocation() + Event.ActorB->GetActorLocation()) / 2;
+						FVector SpawnLocation = (Event.ProjectileA->GetActorLocation() + Event.ProjectileB->GetActorLocation()) / 2;
 
 						FActorSpawnParameters SpawnParams;
 						SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-						GetWorld()->SpawnActor<AActor>(RaisedInteraction->GetResultItem()->GetProjectile(), SpawnLocation, FQuat::Identity.Rotator(), SpawnParams);
+						AActor* SpawnedActor = GetWorld()->SpawnActor<AActor>(RaisedInteraction->GetResultItem()->GetProjectile(), SpawnLocation, FQuat::Identity.Rotator(), SpawnParams);
 
-						ProcessedActors.Add(Event.ActorA);
-						ProcessedActors.Add(Event.ActorB);
+						AModularProjectile* ModularProjectile = Cast<AModularProjectile>(SpawnedActor);
+
+						if (ModularProjectile != nullptr)
+						{
+							TArray<UGameItemData*> GameItems;
+							GameItems.Add(ProjectileAItem);
+							GameItems.Add(ProjectileBItem);
+
+							ModularProjectile->InitializeProjectile(GameItems);
+						}
+
+						ProcessedActors.Add(Event.ProjectileA);
+						ProcessedActors.Add(Event.ProjectileB);
 					}
 					else
 					{

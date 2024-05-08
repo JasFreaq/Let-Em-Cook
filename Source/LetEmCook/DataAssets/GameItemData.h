@@ -34,6 +34,9 @@ class LETEMCOOK_API UGameItemData : public UDataAsset
 	UPROPERTY(EditDefaultsOnly)
 	EProjectileType ProjectileType;
 
+	UPROPERTY(EditDefaultsOnly)
+	TArray<TObjectPtr<UGameItemData>> CompositeGameItems;
+
 	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "ProjectileType == EProjectileType::Utensil"))
 	float ProjectileCooldown = 1.5f;
 
@@ -49,7 +52,13 @@ public:
 
 	TSubclassOf<ALetEmCookProjectile> GetProjectile() const { return Projectile; }
 
-	TSubclassOf<AHeldProjectileMesh> GetHeldMesh() const { return HeldMesh; }
+	EProjectileType GetProjectileType() const { return ProjectileType; }
+
+	TArray<TObjectPtr<UGameItemData>> GetCompositeGameItems() const { return CompositeGameItems; }
 
 	float GetProjectileCooldown() const { return ProjectileCooldown; }
+
+	TSubclassOf<AHeldProjectileMesh> GetHeldMesh() const { return HeldMesh; }
+
+	TArray<TObjectPtr<UGameItemData>> GetNestedGameItems() const { return NestedGameItems; }
 };

@@ -25,8 +25,51 @@ void AModularProjectile::BeginPlay()
 	}
 }
 
+void AModularProjectile::InitializeProjectile(TArray<UGameItemData*> GameItems)
+{
+	for (UGameItemData* GameItem : GameItems)
+	{
+		UpdateProjectile(GameItem);
+	}
+}
+
 // Called on the Server when a collision is processed by ALetEmCookGameMode
 void AModularProjectile::ProcessCollision(TObjectPtr<UGameItemData> GameItem)
+{
+	UpdateProjectile(GameItem);
+
+	GetCollisionComp()->SetPhysicsLinearVelocity(FVector::ZeroVector);
+	GetCollisionComp()->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+}
+
+TArray<TObjectPtr<USceneComponent>> AModularProjectile::GetActiveChildren() const
+{
+	TArray<TObjectPtr<USceneComponent>> ActiveChildren;
+
+	for (TObjectPtr<USceneComponent> SceneComponent : MeshChildren)
+	{
+		if (SceneComponent == GetMesh())
+		{
+			continue;
+		}
+		
+		if (UProjectileSubobjectMeshComponent* Subobject = Cast<UProjectileSubobjectMeshComponent>(SceneComponent); Subobject != nullptr)
+		{
+			if (ItemsPossessed.Contains(Subobject->GetGameItem())) 
+			{
+				ActiveChildren.Add(Subobject);
+			}
+		}
+		else
+		{
+			ActiveChildren.Add(SceneComponent);
+		}
+	}
+
+	return ActiveChildren;
+}
+
+void AModularProjectile::UpdateProjectile(TObjectPtr<UGameItemData> GameItem)
 {
 	for (TObjectPtr<USceneComponent> SceneComponent : MeshChildren)
 	{
@@ -34,21 +77,19 @@ void AModularProjectile::ProcessCollision(TObjectPtr<UGameItemData> GameItem)
 
 		if (Subobject != nullptr && Subobject->GetGameItem() == GameItem)
 		{
-			Multicast_ApplyCollisionEffects(Subobject);
+			Multicast_ApplyUpdateEffects(Subobject);
 
 			ItemsPossessed.Add(GameItem);
 
 			break;
 		}
 	}
-
-	GetCollisionComp()->SetPhysicsLinearVelocity(FVector::ZeroVector);
-	GetCollisionComp()->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 }
 
-void AModularProjectile::Multicast_ApplyCollisionEffects_Implementation(USceneComponent* Subobject)
+void AModularProjectile::Multicast_ApplyUpdateEffects_Implementation(UProjectileSubobjectMeshComponent* Subobject)
 {
 	Subobject->SetVisibility(true);
+	ItemsPossessed.Add(Subobject->GetGameItem());
 
 	AdjustProjectileState();
 }

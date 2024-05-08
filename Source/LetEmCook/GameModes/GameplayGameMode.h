@@ -10,8 +10,10 @@
 class UGameItemData;
 class UInteractionData;
 class UOrderInfoData;
+
 class ALetEmCookCharacter;
 class ALetEmCookPlayerController;
+class ALetEmCookProjectile;
 
 USTRUCT()
 struct FRespawnData
@@ -37,13 +39,13 @@ struct FCollisionEventData
 
 	FCollisionEventData() { }
 
-	FCollisionEventData(AActor* A, AActor* B) : ActorA(A), ActorB(B) { }
+	FCollisionEventData(ALetEmCookProjectile* A, ALetEmCookProjectile* B) : ProjectileA(A), ProjectileB(B) { }
 
 	UPROPERTY()
-	AActor* ActorA;
+	ALetEmCookProjectile* ProjectileA;
 
 	UPROPERTY()
-	AActor* ActorB;
+	ALetEmCookProjectile* ProjectileB;
 };
 
 /**
@@ -53,6 +55,8 @@ UCLASS()
 class LETEMCOOK_API AGameplayGameMode : public ALetEmCookGameMode
 {
 	GENERATED_BODY()
+
+private:
 
 	bool bInGame = false;
 
@@ -117,9 +121,9 @@ public:
 
 	void SpawnSpectator(ALetEmCookPlayerController* Player, const FTransform SpawnTransform);
 
-	void RaiseCollisionEvent(AActor* ActorA, AActor* ActorB);
+	void RaiseCollisionEvent(ALetEmCookProjectile* ProjectileA, ALetEmCookProjectile* ProjectileB);
 
-	void ReceiveOrders(AActor* OrderActor);
+	void ReceiveOrders(ALetEmCookProjectile* Order);
 
 private:
 

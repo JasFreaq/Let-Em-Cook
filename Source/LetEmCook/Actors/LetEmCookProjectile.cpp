@@ -32,6 +32,7 @@ ALetEmCookProjectile::ALetEmCookProjectile()
 	Mesh->CanCharacterStepUpOn = ECB_No;
 
 	Tags.Add(FName("Interactable"));
+	Tags.Add(FName("Projectile"));
 
 	bReplicates = true;
 	AActor::SetReplicateMovement(true);
@@ -46,7 +47,7 @@ void ALetEmCookProjectile::BeginPlay()
 
 void ALetEmCookProjectile::OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (OtherActor->Tags.Contains(FName("Interactable")))
+	if (OtherActor->Tags.Contains(FName("Projectile")))
 	{
 		SendCollisionEventToGameMode(SelfActor, OtherActor);
 	}
@@ -70,10 +71,14 @@ void ALetEmCookProjectile::SendCollisionEventToGameMode(AActor* SelfActor, AActo
 {
 	if (HasAuthority())
 	{
-		AGameplayGameMode* GameMode = GetWorld()->GetAuthGameMode<AGameplayGameMode>();
-		if (GameMode != nullptr)
+		ALetEmCookProjectile* OtherProjectile = Cast<ALetEmCookProjectile>(OtherActor);
+		if (OtherProjectile != nullptr)
 		{
-			GameMode->RaiseCollisionEvent(SelfActor, OtherActor);
+			AGameplayGameMode* GameMode = GetWorld()->GetAuthGameMode<AGameplayGameMode>();
+			if (GameMode != nullptr)
+			{
+				GameMode->RaiseCollisionEvent(this, OtherProjectile);
+			}
 		}
 	}
 	else
@@ -89,7 +94,7 @@ void ALetEmCookProjectile::Server_SendCollisionEventToGameMode_Implementation(AA
 
 void ALetEmCookProjectile::Multicast_SetProjectileEnabled_Implementation(bool bIsEnabled)
 {
-	Mesh->SetVisibility(bIsEnabled, true);
+	RootComponent->SetVisibility(bIsEnabled, true);
 
 	CollisionComp->SetSimulatePhysics(bIsEnabled);	
 	SetActorEnableCollision(bIsEnabled);
