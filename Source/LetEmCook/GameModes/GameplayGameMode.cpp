@@ -18,27 +18,41 @@ void AGameplayGameMode::Tick(float DeltaSeconds)
 
 	if (bInGame)
 	{
-		const float CurrentTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+		const float ServerTimeSeconds = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 
-		if (CurrentTime - CurrentMapInitTime >= GameTime)
+		if (ServerTimeSeconds - CurrentMapInitTime >= GameTime)
 		{
 			bInGame = false;
 
 			UE_LOG(LogTemp, Warning, TEXT("Game Over"));
 		}
 
-		if (CurrentTime - LastOrderSpawnTime >= OrderSpawnCooldown)
+		if (ServerTimeSeconds - LastOrderSpawnTime >= OrderSpawnCooldown)
 		{
 			if (ActiveOrders.Num() < MaxOrders)
 			{
 
 				ActiveOrders.Add(OrdersInfo[FMath::RandRange(0, OrdersInfo.Num() - 1)]);
 
-				LastOrderSpawnTime = CurrentTime;
+				LastOrderSpawnTime = ServerTimeSeconds;
 			}
 		}
 
 		ProcessCollision();
+
+		if (!RespawnTimestamps.IsEmpty())
+		{
+			FRespawnData* RespawnData = RespawnTimestamps.Peek();
+			const float SecondsElapsedSince = ServerTimeSeconds - RespawnData->DeathTime;
+
+			if (SecondsElapsedSince > RespawnCooldown)
+			{
+				RespawnData->PlayerController->MakeNewCharacterRequest();
+
+				FRespawnData _;
+				RespawnTimestamps.Dequeue(_);
+			}
+		}
 	}
 }
 
@@ -61,13 +75,27 @@ void AGameplayGameMode::GetGameRemainingTime(int& RemainingMinutes, int& Remaini
 	RemainingSeconds = FMath::RoundToInt(RemainingTime) % 60;
 }
 
-void AGameplayGameMode::SpawnPlayerCharacter(APlayerController* Player, TSubclassOf<ALetEmCookCharacter> CharacterClass, ETeam Team)
+void AGameplayGameMode::SpawnPlayerCharacter(ALetEmCookPlayerController* Player, TSubclassOf<ALetEmCookCharacter> CharacterClass, ETeam Team)
 {
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 	const FTransform SpawnTransform = GetPlayerSpawnTransform(Team);
 
 	AActor* SpawnedCharacter = GetWorld()->SpawnActor(CharacterClass, &SpawnTransform, SpawnParams);
+
+	Player->Possess(Cast<APawn>(SpawnedCharacter));
+}
+
+void AGameplayGameMode::SpawnSpectator(ALetEmCookPlayerController* Player, const FTransform SpawnTransform)
+{
+	float CurrentTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+	FRespawnData RespawnData(Player, CurrentTime);
+	RespawnTimestamps.Enqueue(RespawnData);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	AActor* SpawnedCharacter = GetWorld()->SpawnActor(SpectatorPawn, &SpawnTransform, SpawnParams);
 
 	Player->Possess(Cast<APawn>(SpawnedCharacter));
 }

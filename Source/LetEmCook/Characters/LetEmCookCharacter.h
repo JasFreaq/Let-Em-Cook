@@ -95,7 +95,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
 	TObjectPtr<UAnimMontage> ThrowAnimation;
 
-	/** Speed of AnimMontage to play */
+	/** Speed of Throw AnimMontage to play */
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
 	float ThrowAnimationRate = 1.f;
 
@@ -112,6 +112,30 @@ private:
 
 	UPROPERTY(Replicated, ReplicatedUsing = OnCurrentProjectileIndexChanged)
 	int CurrentProjectileIndex;
+
+	/** Sound to play each time we get hit */
+	UPROPERTY(EditDefaultsOnly, Category = Damage)
+	TObjectPtr<USoundBase> GetHitSound;
+
+	/** AnimMontage to play each time we get hit */
+	UPROPERTY(EditDefaultsOnly, Category = Damage)
+	TObjectPtr<UAnimMontage> GetHitAnimation;
+
+	/** Speed of GetHit AnimMontage to play */
+	UPROPERTY(EditDefaultsOnly, Category = Damage)
+	float GetHitAnimationRate = 1.f;
+
+	/** Sound to play when we die */
+	UPROPERTY(EditDefaultsOnly, Category = Damage)
+	TObjectPtr<USoundBase> DeathSound;
+
+	/** AnimMontage to play when we die */
+	UPROPERTY(EditDefaultsOnly, Category = Damage)
+	TObjectPtr<UAnimMontage> DeathAnimation;
+
+	/** Speed of Death AnimMontage to play */
+	UPROPERTY(EditDefaultsOnly, Category = Damage)
+	float DeathAnimationRate = 1.f;
 
 	TArray<AHeldProjectileMesh*> ProjectileRepresentationMeshes;
 
@@ -199,6 +223,12 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_HandleProjectileThrowing();
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_HandleGetHitEffects();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_HandleDeathEffects();
+
 	void GetProjectileSpawnLocationAndRotation(bool bUseCameraRotation, FVector& SpawnLocation, FRotator& SpawnRotation) const;
 
 	UFUNCTION(Server, Reliable)
@@ -227,7 +257,4 @@ private:
 	void OnPickedUpIngredient();
 
 	void DropHeldIngredient(bool bUseCameraRotation, bool bLaunch);
-
-	UFUNCTION(Server, Reliable)
-	void Server_TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser);
 };

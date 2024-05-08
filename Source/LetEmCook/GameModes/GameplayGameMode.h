@@ -11,6 +11,24 @@ class UGameItemData;
 class UInteractionData;
 class UOrderInfoData;
 class ALetEmCookCharacter;
+class ALetEmCookPlayerController;
+
+USTRUCT()
+struct FRespawnData
+{
+	GENERATED_BODY()
+
+	FRespawnData() { }
+
+	FRespawnData(ALetEmCookPlayerController* Controller, float Time) :
+	PlayerController(Controller), DeathTime(Time) { }
+
+	UPROPERTY()
+	ALetEmCookPlayerController* PlayerController;
+
+	UPROPERTY()
+	float DeathTime;
+};
 
 USTRUCT()
 struct FCollisionEventData
@@ -36,6 +54,8 @@ class LETEMCOOK_API AGameplayGameMode : public ALetEmCookGameMode
 {
 	GENERATED_BODY()
 
+	bool bInGame = false;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
 	float GameTime = 600.0f;
 
@@ -48,11 +68,17 @@ class LETEMCOOK_API AGameplayGameMode : public ALetEmCookGameMode
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
 	int MaxOrders = 4;
 
-	bool bInGame = false;
-
 	float LastOrderSpawnTime = 0.0f;
 
-	// Team Management
+	// Player Management
+
+	UPROPERTY(EditDefaultsOnly, Category = "Respawn")
+	TSubclassOf<APawn> SpectatorPawn;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Respawn")
+	float RespawnCooldown = 10;
+
+	TQueue<FRespawnData> RespawnTimestamps;
 
 	UPROPERTY()
 	TArray<AActor*> BlueSpawnPoints;
@@ -87,7 +113,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void GetGameRemainingTime(int& RemainingMinutes, int& RemainingSeconds);
 	
-	void SpawnPlayerCharacter(APlayerController* Player, TSubclassOf<ALetEmCookCharacter> CharacterClass, ETeam Team);
+	void SpawnPlayerCharacter(ALetEmCookPlayerController* Player, TSubclassOf<ALetEmCookCharacter> CharacterClass, ETeam Team);
+
+	void SpawnSpectator(ALetEmCookPlayerController* Player, const FTransform SpawnTransform);
 
 	void RaiseCollisionEvent(AActor* ActorA, AActor* ActorB);
 

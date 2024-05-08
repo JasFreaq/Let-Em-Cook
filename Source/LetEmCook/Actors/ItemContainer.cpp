@@ -52,8 +52,8 @@ void AItemContainer::Tick(float DeltaTime)
 
 	if (!CooldownTimestamps.IsEmpty())
 	{
-		const float RealtimeSeconds = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
-		const float SecondsElapsedSince = RealtimeSeconds - *CooldownTimestamps.Peek();
+		const float ServerTimeSeconds = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+		const float SecondsElapsedSince = ServerTimeSeconds - *CooldownTimestamps.Peek();
 
 		if (SecondsElapsedSince > ItemCooldown)
 		{

@@ -304,25 +304,25 @@ AHeldProjectileMesh* ALetEmCookCharacter::InstantiateRepresentationMesh(TSubclas
 void ALetEmCookCharacter::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor->Tags.Contains(FName("Interactable")))
+	if (HasAuthority())
 	{
-		const UDamageComponent* DamageComponent = OtherActor->FindComponentByClass<UDamageComponent>();
-		if (DamageComponent != nullptr)
+		if (OtherActor->Tags.Contains(FName("Interactable")))
 		{
-			ALetEmCookProjectile* Projectile = Cast<ALetEmCookProjectile>(OtherActor);
-			if (Projectile != nullptr)
+			const UDamageComponent* DamageComponent = OtherActor->FindComponentByClass<UDamageComponent>();
+			if (DamageComponent != nullptr)
 			{
-				ALetEmCookCharacter* OwnerCharacter = Projectile->GetOwnerCharacter();
-				if (OwnerCharacter != nullptr)
+				ALetEmCookProjectile* Projectile = Cast<ALetEmCookProjectile>(OtherActor);
+				if (Projectile != nullptr)
 				{
-					ALetEmCookPlayerController* OtherController = Cast<ALetEmCookPlayerController>(OwnerCharacter->GetController());
-					ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
-
-					UE_LOG(LogTemp, Warning, TEXT("TeamA: %d has been hit by TeamB: %d"), OtherController->GetPlayerTeam(), PlayerController->GetPlayerTeam());
-
-					if (OtherController->GetPlayerTeam() != PlayerController->GetPlayerTeam())
+					ALetEmCookCharacter* OwnerCharacter = Projectile->GetOwnerCharacter();
+					if (OwnerCharacter != nullptr)
 					{
-						if (IsLocallyControlled())
+						ALetEmCookPlayerController* OtherController = Cast<ALetEmCookPlayerController>(OwnerCharacter->GetController());
+						ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
+
+						UE_LOG(LogTemp, Warning, TEXT("TeamA: %d has been hit by TeamB: %d"), OtherController->GetPlayerTeam(), PlayerController->GetPlayerTeam());
+
+						if (OtherController->GetPlayerTeam() != PlayerController->GetPlayerTeam())
 						{
 							FDamageEvent DamageEvent;
 							TakeDamage(DamageComponent->GetDamage(), DamageEvent, nullptr, OtherActor);
@@ -504,6 +504,54 @@ void ALetEmCookCharacter::Multicast_HandleProjectileThrowing_Implementation()
 			AnimInstance->Montage_Play(ThrowAnimation, ThrowAnimationRate);
 			AnimInstance->Montage_JumpToSection(ThrowSectionName, ThrowAnimation);
 		}
+	}
+}
+
+void ALetEmCookCharacter::Multicast_HandleGetHitEffects_Implementation()
+{
+	// Try and play the sound if specified
+	if (GetHitSound != nullptr)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, GetHitSound, GetActorLocation());
+	}
+
+	// Try and play a getting hit animation if specified
+	if (GetHitAnimation != nullptr)
+	{
+		UAnimInstance* AnimInstance;
+		if (IsLocallyControlled())
+		{
+			AnimInstance = GetMesh1P()->GetAnimInstance();
+		}
+		else
+		{
+			AnimInstance = GetMesh()->GetAnimInstance();
+		}
+
+		if (AnimInstance != nullptr)
+		{
+			AnimInstance->Montage_Play(GetHitAnimation, GetHitAnimationRate);
+		}
+	}
+}
+
+void ALetEmCookCharacter::Multicast_HandleDeathEffects_Implementation()
+{
+	// Try and play the sound if specified
+	if (DeathSound != nullptr)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
+	}
+
+	// Try and play a death animation if specified
+	if (DeathAnimation != nullptr)
+	{
+		if (IsLocallyControlled())
+		{
+			GetMesh1P()->SetVisibility(false);
+		}
+
+		GetMesh()->GetAnimInstance()->Montage_Play(DeathAnimation, DeathAnimationRate);		
 	}
 }
 
@@ -723,28 +771,28 @@ void ALetEmCookCharacter::DropHeldIngredient(bool bUseCameraRotation, bool bLaun
 
 float ALetEmCookCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	if (HasAuthority())
-	{
-		HealthComponent->ApplyDamage(DamageAmount);
+	HealthComponent->ApplyDamage(DamageAmount);
 
-		if (DamageCauser != nullptr)
-		{
-			DamageCauser->Destroy();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Damage Causer is null."));
-		}
+	if (HealthComponent->GetCurrentHealth() > 0.f)
+	{
+		Multicast_HandleGetHitEffects();
 	}
 	else
 	{
-		Server_TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+		ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
+		PlayerController->HandlePlayerDeath();
+
+		Multicast_HandleDeathEffects();
+	}
+
+	if (DamageCauser != nullptr)
+	{
+		DamageCauser->Destroy();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Damage Causer is null."));
 	}
 
 	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-}
-
-void ALetEmCookCharacter::Server_TakeDamage_Implementation(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-{
-	TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 }

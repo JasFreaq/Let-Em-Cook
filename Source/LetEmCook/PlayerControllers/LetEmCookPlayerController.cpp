@@ -117,9 +117,17 @@ void ALetEmCookPlayerController::InitiateControllerForGame()
 
 		SetInputMode(FInputModeGameOnly());
 		bShowMouseCursor = false;
-
-		ShowHUD();
 	}
+}
+
+void ALetEmCookPlayerController::HandlePlayerDeath()
+{
+	Multicast_HandlePlayerDeath();
+}
+
+void ALetEmCookPlayerController::MakeNewCharacterRequest()
+{
+	Server_RequestCharacter();
 }
 
 void ALetEmCookPlayerController::Server_SetSessionIdOnGameInstance_Implementation(const FString& Session)
@@ -146,12 +154,44 @@ void ALetEmCookPlayerController::Server_SetCharacterClass_Implementation(TSubcla
 	SetCharacterClass(ChosenCharacterClass);
 }
 
+void ALetEmCookPlayerController::Multicast_HandlePlayerDeath_Implementation()
+{
+	if (IsLocalPlayerController())
+	{
+		HideHUD();
+		HidePickupWidget();
+	}
+
+	if (HasAuthority())
+	{
+		Server_RequestSpectator();
+	}
+}
+
 void ALetEmCookPlayerController::Server_RequestCharacter_Implementation()
 {
+	if (LastPawn != nullptr)
+	{
+		LastPawn->Destroy();
+		LastPawn = nullptr;
+	}
+
 	AGameplayGameMode* GameMode = GetWorld()->GetAuthGameMode<AGameplayGameMode>();
 	GameMode->SpawnPlayerCharacter(this, CharacterClass, Team);
 
 	UE_LOG(LogTemp, Warning, TEXT("Requesting Character: %s"), *CharacterClass.Get()->GetDefaultObjectName().ToString());
+
+	ShowHUD();
+}
+
+void ALetEmCookPlayerController::Server_RequestSpectator_Implementation()
+{
+	LastPawn = GetPawn();
+	UnPossess();
+
+	AGameplayGameMode* GameMode = GetWorld()->GetAuthGameMode<AGameplayGameMode>();
+
+	GameMode->SpawnSpectator(this, LastPawn->GetActorTransform());
 }
 
 //////////////////////////////////////////////////////////////////////////

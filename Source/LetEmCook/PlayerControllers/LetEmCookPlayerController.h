@@ -37,6 +37,8 @@ class LETEMCOOK_API ALetEmCookPlayerController : public APlayerController
 	UPROPERTY()
 	TSubclassOf<ALetEmCookCharacter> CharacterClass;
 
+	TObjectPtr<APawn> LastPawn = nullptr;
+
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Character Selection", meta = (AllowPrivateAccess = true))
 	int CharacterSelectionScreenTimer = 0;
 
@@ -53,6 +55,10 @@ public:
 	void SetCharacterClass(TSubclassOf<ALetEmCookCharacter> ChosenCharacterClass);
 
 	ETeam GetPlayerTeam() { return Team; }
+
+	void HandlePlayerDeath();
+
+	void MakeNewCharacterRequest();
 
 	void ShowHUD();
 
@@ -79,8 +85,14 @@ private:
 	UFUNCTION(Server, Reliable)
 	void Server_SetCharacterClass(TSubclassOf<ALetEmCookCharacter> ChosenCharacterClass);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_HandlePlayerDeath();
+
 	UFUNCTION(Server, Reliable)
 	void Server_RequestCharacter();
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestSpectator();
 
 	UFUNCTION(Client, Reliable)
 	void Client_ShowHUD();
