@@ -113,9 +113,18 @@ void AGameplayGameMode::ReceiveOrders(ALetEmCookProjectile* Order)
 {
 	for (TObjectPtr<UOrderInfoData> OrderInfo : ActiveOrders)
 	{
-		ALetEmCookProjectile* OrderItem = Cast<ALetEmCookProjectile>(Order);
+		AModularProjectile* OrderItem = Cast<AModularProjectile>(Order);
 		if (OrderInfo->GetOrderItem() == OrderItem->GetGameItem())
 		{
+			TArray<TObjectPtr<UGameItemData>> ItemsInOrder = OrderItem->GetItemsPossessed();
+			for (TObjectPtr<UGameItemData> GameItem : OrderInfo->GetOrderItem()->GetCompositeGameItems())
+			{
+				if (!ItemsInOrder.Contains(GameItem))
+				{
+					return;
+				}
+			}
+
 			ALetEmCookCharacter* Character = OrderItem->GetOwnerCharacter();
 
 			ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Character->GetController());
@@ -267,7 +276,7 @@ void AGameplayGameMode::ProcessCollision()
 			}
 			else
 			{
-								UE_LOG(LogTemp, Error, TEXT("No Interaction Found"));
+				UE_LOG(LogTemp, Error, TEXT("No Interaction Found"));
 			}
 		}
 

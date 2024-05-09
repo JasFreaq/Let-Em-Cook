@@ -15,6 +15,8 @@ class ALetEmCookCharacter;
 class ALetEmCookPlayerController;
 class ALetEmCookProjectile;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOrdersChanged, UOrderInfoData*, Order);
+
 USTRUCT()
 struct FRespawnData
 {
@@ -107,6 +109,10 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<UOrderInfoData>> ActiveOrders;
 
+	FOrdersChanged OrderAddedDelegate;
+
+	FOrdersChanged OrderRemovedDelegate;
+
 public:
 
 	virtual void Tick(float DeltaSeconds) override;
@@ -124,6 +130,10 @@ public:
 	void RaiseCollisionEvent(ALetEmCookProjectile* ProjectileA, ALetEmCookProjectile* ProjectileB);
 
 	void ReceiveOrders(ALetEmCookProjectile* Order);
+
+	FOrdersChanged GetOrderAddedDelegate() const { return OrderAddedDelegate; }
+
+	FOrdersChanged GetOrderRemovedDelegate() const { return OrderRemovedDelegate; }
 
 private:
 

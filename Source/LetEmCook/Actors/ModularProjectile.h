@@ -35,6 +35,8 @@ public:
 
 	TArray<TObjectPtr<USceneComponent>> GetActiveChildren() const;
 
+	TArray<TObjectPtr<UGameItemData>> GetItemsPossessed() const { return ItemsPossessed; }
+
 protected:
 
 	virtual void BeginPlay() override;
