@@ -32,6 +32,15 @@ AOrderReceiver::AOrderReceiver()
 	ReceiverMesh->SetRelativeLocation(FVector(0.f, 0.f, -60.f));
 	ReceiverMesh->BodyInstance.SetCollisionProfileName("NoCollision");
 	ReceiverMesh->CanCharacterStepUpOn = ECB_No;
+
+	bReplicates = true;
+}
+
+void AOrderReceiver::BeginPlay()
+{
+	Super::BeginPlay();
+
+	OnActorHit.AddDynamic(this, &AOrderReceiver::OnHit);
 }
 
 void AOrderReceiver::OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit)
@@ -42,7 +51,7 @@ void AOrderReceiver::OnHit(AActor* SelfActor, AActor* OtherActor, FVector Normal
 		{
 			if (ALetEmCookProjectile* Projectile = Cast<ALetEmCookProjectile>(OtherActor); Projectile != nullptr)
 			{
-				AGameplayGameMode* GameMode = Cast<AGameplayGameMode>(GetWorld()->GetAuthGameMode());
+				AGameplayGameMode* GameMode = GetWorld()->GetAuthGameMode<AGameplayGameMode>();
 				GameMode->ReceiveOrders(Projectile);
 			}
 		}

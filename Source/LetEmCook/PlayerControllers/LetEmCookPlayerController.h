@@ -23,11 +23,17 @@ class LETEMCOOK_API ALetEmCookPlayerController : public APlayerController
 	UPROPERTY(EditDefaultsOnly, Category = UI)
 	TSubclassOf<UPickupNotifyWidget> PickupWidget;
 
+	UPROPERTY(EditDefaultsOnly, Category = UI)
+	TSubclassOf<UUserWidget> GameOverWidget;
+
 	UPROPERTY(Replicated)
 	TObjectPtr<UUserWidget> HUDWidgetInstance;
 
 	UPROPERTY(Replicated)
 	TObjectPtr<UPickupNotifyWidget> PickupWidgetInstance;
+
+	UPROPERTY()
+	TObjectPtr<UUserWidget> GameOverWidgetInstance;
 	
 	bool bIsPickupWidgetVisible = false;
 
@@ -40,21 +46,28 @@ class LETEMCOOK_API ALetEmCookPlayerController : public APlayerController
 	TObjectPtr<APawn> LastPawn = nullptr;
 
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Character Selection", meta = (AllowPrivateAccess = true))
-	int CharacterSelectionScreenTimer = 0;
+	float CurrentGameModeTime = 0;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Scoring", meta = (AllowPrivateAccess = true))
+	int BlueTeamScore = 0;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Scoring", meta = (AllowPrivateAccess = true))
+	int RedTeamScore = 0;
 
 public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
 	UFUNCTION(BlueprintCallable)
-	void InitiateControllerForGame();
+	void InitializeControllerForGame();
 
 	void SetPlayerTeam(ETeam AllottedTeam);
 
 	UFUNCTION(BlueprintCallable)
 	void SetCharacterClass(TSubclassOf<ALetEmCookCharacter> ChosenCharacterClass);
 
-	ETeam GetPlayerTeam() { return Team; }
+	UFUNCTION(BlueprintCallable)
+	ETeam GetPlayerTeam() const { return Team; }
 
 	void HandlePlayerDeath();
 
@@ -75,6 +88,11 @@ protected:
 	virtual void BeginPlay() override;
 	
 private:
+	
+	void RequestCharacter();
+
+	UFUNCTION()
+	void ProcessGameOver();
 
 	UFUNCTION(Server, Reliable)
 	void Server_SetSessionIdOnGameInstance(const FString& Session);
@@ -89,10 +107,16 @@ private:
 	void Multicast_HandlePlayerDeath();
 
 	UFUNCTION(Server, Reliable)
+	void Server_InitializeControllerForGame();
+
+	UFUNCTION(Server, Reliable)
 	void Server_RequestCharacter();
 
 	UFUNCTION(Server, Reliable)
 	void Server_RequestSpectator();
+
+	UFUNCTION(Client, Reliable)
+	void Client_ProcessGameOver();
 
 	UFUNCTION(Client, Reliable)
 	void Client_ShowHUD();

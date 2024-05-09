@@ -73,3 +73,9 @@ void ALetEmCookGameMode::Logout(AController* Exiting)
 		UE_LOG(LogTemp, Error, TEXT("No Game Instance found"));
 	}
 }
+
+float ALetEmCookGameMode::GetGameModeTimeRemaining() const
+{
+	const float CurrentTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+	return FMath::Max(0.f, GameModeTime - CurrentTime + CurrentMapInitTime);
+}

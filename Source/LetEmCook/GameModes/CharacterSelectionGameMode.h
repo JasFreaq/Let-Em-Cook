@@ -22,11 +22,6 @@ class LETEMCOOK_API ACharacterSelectionGameMode : public ALetEmCookGameMode
 	UPROPERTY(EditDefaultsOnly)
 	int QueueSize = 2;
 
-	// Game Initialization
-
-	UPROPERTY(EditDefaultsOnly, Category = "Character Selection")
-	float CharacterSelectionTime = 20.0f;
-
 	bool bInCharacterSelection = false;
 
 public:
@@ -37,7 +32,4 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void BeginCharacterSelection();
-
-	UFUNCTION(BlueprintCallable, BlueprintPure)
-	int GetCharacterSelectionRemainingTime() const;
 };

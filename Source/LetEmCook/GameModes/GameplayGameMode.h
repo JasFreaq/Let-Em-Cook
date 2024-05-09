@@ -16,6 +16,7 @@ class ALetEmCookPlayerController;
 class ALetEmCookProjectile;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOrdersChanged, UOrderInfoData*, Order);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGameOver);
 
 USTRUCT()
 struct FRespawnData
@@ -63,9 +64,6 @@ private:
 	bool bInGame = false;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
-	float GameTime = 600.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
 	TArray<TObjectPtr<UOrderInfoData>> OrdersInfo;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
@@ -92,13 +90,13 @@ private:
 	UPROPERTY()
 	TArray<AActor*> RedSpawnPoints;
 
-	int BlueTeamPoints = 0;
+	int BlueTeamScore = 0;
 
-	int RedTeamPoints = 0;
+	int RedTeamScore = 0;
 
 	// Collision Handling
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
 	TArray<TObjectPtr<UInteractionData>> Interactions;
 
 	TQueue<FCollisionEventData> CollisionEventsQueue;
@@ -115,15 +113,14 @@ private:
 	UPROPERTY(BlueprintAssignable)
 	FOrdersChanged OrderRemovedDelegate;
 
+	FGameOver GameOverDelegate;
+
 public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
 	UFUNCTION(BlueprintCallable)
 	void BeginGame();
-
-	UFUNCTION(BlueprintCallable)
-	void GetGameRemainingTime(int& RemainingMinutes, int& RemainingSeconds);
 	
 	void SpawnPlayerCharacter(ALetEmCookPlayerController* Player, TSubclassOf<ALetEmCookCharacter> CharacterClass, ETeam Team);
 
@@ -133,9 +130,9 @@ public:
 
 	void ReceiveOrders(ALetEmCookProjectile* OrderProjectile);
 
-	FOrdersChanged GetOrderAddedDelegate() const { return OrderAddedDelegate; }
+	FGameOver* OnGameOver() { return &GameOverDelegate; }
 
-	FOrdersChanged GetOrderRemovedDelegate() const { return OrderRemovedDelegate; }
+	void GetTeamScores(int& Blue, int& Red) const { Blue = BlueTeamScore; Red = RedTeamScore; }
 
 private:
 

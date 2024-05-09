@@ -32,7 +32,7 @@ void ACharacterSelectionGameMode::Tick(float DeltaSeconds)
 	if (bInCharacterSelection)
 	{
 		const float CurrentTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
-		if (CurrentTime - CurrentMapInitTime >= CharacterSelectionTime)
+		if (CurrentTime - CurrentMapInitTime >= GameModeTime)
 		{
 			bInCharacterSelection = false;
 
@@ -49,10 +49,4 @@ void ACharacterSelectionGameMode::BeginCharacterSelection()
 	bInCharacterSelection = true;
 
 	CurrentMapInitTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
-}
-
-int ACharacterSelectionGameMode::GetCharacterSelectionRemainingTime() const
-{
-	const float CurrentTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
-	return FMath::RoundToInt(FMath::Max(0.f, CharacterSelectionTime - CurrentTime + CurrentMapInitTime));
 }

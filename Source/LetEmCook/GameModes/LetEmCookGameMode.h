@@ -19,8 +19,11 @@ class ALetEmCookGameMode : public AGameMode
 
 public:
 	ALetEmCookGameMode();
-
+	
 protected:
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
+	float GameModeTime;
 
 	float CurrentMapInitTime;
 
@@ -31,4 +34,7 @@ public:
 	virtual void Logout(AController* Exiting) override;
 
 	virtual void OnPostLogin(AController* NewPlayer) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	float GetGameModeTimeRemaining() const;
 };

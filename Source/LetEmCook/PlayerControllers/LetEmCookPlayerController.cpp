@@ -9,7 +9,6 @@
 #include "Net/UnrealNetwork.h"
 
 #include "LetEmCook/GameInstances/LetEmCookGameInstance.h"
-#include "LetEmCook/GameModes/CharacterSelectionGameMode.h"
 #include "LetEmCook/GameModes/GameplayGameMode.h"
 #include "LetEmCook/GameModes/LetEmCookGameMode.h"
 #include "LetEmCook/UserWidgets/PickupNotifyWidget.h"
@@ -43,8 +42,23 @@ void ALetEmCookPlayerController::BeginPlay()
 			UE_LOG(LogTemp, Warning, TEXT("Game Instance is not of type ULetEmCookGameInstance"));
 		}		
 
-		HUDWidgetInstance = CreateWidget(this, HUDWidget);
-		PickupWidgetInstance = Cast<UPickupNotifyWidget>(CreateWidget(this, PickupWidget));
+		if (HUDWidget != nullptr)
+		{
+			HUDWidgetInstance = CreateWidget(this, HUDWidget);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("HUDWidget is null"));
+		}
+		
+		if (PickupWidget != nullptr)
+		{
+			PickupWidgetInstance = CreateWidget<UPickupNotifyWidget>(this, PickupWidget);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("PickupWidget is null"));
+		}
 	}
 }
 
@@ -54,10 +68,16 @@ void ALetEmCookPlayerController::Tick(float DeltaSeconds)
 
 	if (HasAuthority())
 	{
-		ACharacterSelectionGameMode* GameMode = GetWorld()->GetAuthGameMode<ACharacterSelectionGameMode>();
+		ALetEmCookGameMode* GameMode = GetWorld()->GetAuthGameMode<ALetEmCookGameMode>();
 		if (GameMode != nullptr)
 		{
-			CharacterSelectionScreenTimer = GameMode->GetCharacterSelectionRemainingTime();
+			CurrentGameModeTime = GameMode->GetGameModeTimeRemaining();
+		}
+
+		AGameplayGameMode* GameplayGameMode = Cast<AGameplayGameMode>(GameMode);
+		if (GameplayGameMode != nullptr)
+		{
+			GameplayGameMode->GetTeamScores(BlueTeamScore, RedTeamScore);
 		}
 	}
 }
@@ -71,7 +91,9 @@ void ALetEmCookPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 
 	DOREPLIFETIME(ALetEmCookPlayerController, Team);
 
-	DOREPLIFETIME(ALetEmCookPlayerController, CharacterSelectionScreenTimer);
+	DOREPLIFETIME(ALetEmCookPlayerController, CurrentGameModeTime);
+	DOREPLIFETIME(ALetEmCookPlayerController, BlueTeamScore);
+	DOREPLIFETIME(ALetEmCookPlayerController, RedTeamScore);
 }
 
 void ALetEmCookPlayerController::SetPlayerTeam(ETeam AllottedTeam)
@@ -100,7 +122,7 @@ void ALetEmCookPlayerController::SetCharacterClass(TSubclassOf<ALetEmCookCharact
 	UE_LOG(LogTemp, Warning, TEXT("Setting Character Class: %s"), *ChosenCharacterClass.Get()->GetDefaultObjectName().ToString());
 }
 
-void ALetEmCookPlayerController::InitiateControllerForGame()
+void ALetEmCookPlayerController::InitializeControllerForGame()
 {
 	if (IsLocalPlayerController())
 	{
@@ -113,11 +135,27 @@ void ALetEmCookPlayerController::InitiateControllerForGame()
 			UE_LOG(LogTemp, Warning, TEXT("Character Class: %s"), *CharacterClass.Get()->GetDefaultObjectName().ToString());
 		}
 
-		Server_RequestCharacter();
+		Server_InitializeControllerForGame();
 
 		SetInputMode(FInputModeGameOnly());
 		bShowMouseCursor = false;
 	}
+}
+
+void ALetEmCookPlayerController::RequestCharacter()
+{
+	if (LastPawn != nullptr)
+	{
+		LastPawn->Destroy();
+		LastPawn = nullptr;
+	}
+
+	AGameplayGameMode* GameMode = GetWorld()->GetAuthGameMode<AGameplayGameMode>();
+	GameMode->SpawnPlayerCharacter(this, CharacterClass, Team);
+
+	UE_LOG(LogTemp, Warning, TEXT("Requesting Character: %s"), *CharacterClass.Get()->GetDefaultObjectName().ToString());
+
+	ShowHUD();
 }
 
 void ALetEmCookPlayerController::HandlePlayerDeath()
@@ -128,6 +166,19 @@ void ALetEmCookPlayerController::HandlePlayerDeath()
 void ALetEmCookPlayerController::MakeNewCharacterRequest()
 {
 	Server_RequestCharacter();
+}
+
+void ALetEmCookPlayerController::ProcessGameOver()
+{
+	Client_ProcessGameOver();
+}
+
+void ALetEmCookPlayerController::Server_InitializeControllerForGame_Implementation()
+{
+	AGameplayGameMode* GameMode = GetWorld()->GetAuthGameMode<AGameplayGameMode>();
+	GameMode->OnGameOver()->AddDynamic(this, &ALetEmCookPlayerController::ProcessGameOver);
+
+	RequestCharacter();
 }
 
 void ALetEmCookPlayerController::Server_SetSessionIdOnGameInstance_Implementation(const FString& Session)
@@ -170,18 +221,7 @@ void ALetEmCookPlayerController::Multicast_HandlePlayerDeath_Implementation()
 
 void ALetEmCookPlayerController::Server_RequestCharacter_Implementation()
 {
-	if (LastPawn != nullptr)
-	{
-		LastPawn->Destroy();
-		LastPawn = nullptr;
-	}
-
-	AGameplayGameMode* GameMode = GetWorld()->GetAuthGameMode<AGameplayGameMode>();
-	GameMode->SpawnPlayerCharacter(this, CharacterClass, Team);
-
-	UE_LOG(LogTemp, Warning, TEXT("Requesting Character: %s"), *CharacterClass.Get()->GetDefaultObjectName().ToString());
-
-	ShowHUD();
+	RequestCharacter();
 }
 
 void ALetEmCookPlayerController::Server_RequestSpectator_Implementation()
@@ -192,6 +232,25 @@ void ALetEmCookPlayerController::Server_RequestSpectator_Implementation()
 	AGameplayGameMode* GameMode = GetWorld()->GetAuthGameMode<AGameplayGameMode>();
 
 	GameMode->SpawnSpectator(this, LastPawn->GetActorTransform());
+}
+
+void ALetEmCookPlayerController::Client_ProcessGameOver_Implementation()
+{
+	if (IsLocalPlayerController())
+	{
+		if (GameOverWidget != nullptr)
+		{
+			GameOverWidgetInstance = CreateWidget(this, GameOverWidget);
+			GameOverWidgetInstance->AddToViewport();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GameOverWidget is null"));
+		}
+
+		SetInputMode(FInputModeUIOnly());
+		bShowMouseCursor = true;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

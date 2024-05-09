@@ -95,7 +95,7 @@ void AItemTransmuter::OnHit(AActor* SelfActor, AActor* OtherActor, FVector Norma
 {
 	if (HasAuthority())
 	{
-		if (OtherActor->ActorHasTag("Interactable"))
+		if (OtherActor->ActorHasTag("Projectile"))
 		{
 			if (CurrentlyProcessingItem == nullptr)
 			{

@@ -20,10 +20,11 @@ void AGameplayGameMode::Tick(float DeltaSeconds)
 	{
 		const float ServerTimeSeconds = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 
-		if (ServerTimeSeconds - CurrentMapInitTime >= GameTime)
+		if (ServerTimeSeconds - CurrentMapInitTime >= GameModeTime)
 		{
 			bInGame = false;
-
+			
+			GameOverDelegate.Broadcast();
 			UE_LOG(LogTemp, Warning, TEXT("Game Over"));
 		}
 
@@ -69,15 +70,6 @@ void AGameplayGameMode::BeginGame()
 	UGameplayStatics::GetAllActorsOfClassWithTag(this, ATargetPoint::StaticClass(), FName(TEXT("Red")), RedSpawnPoints);
 }
 
-void AGameplayGameMode::GetGameRemainingTime(int& RemainingMinutes, int& RemainingSeconds)
-{
-	const float CurrentTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
-	const float RemainingTime = FMath::Max(0.f, GameTime - CurrentTime + CurrentMapInitTime);
-
-	RemainingMinutes = FMath::FloorToInt(RemainingTime / 60);
-	RemainingSeconds = FMath::RoundToInt(RemainingTime) % 60;
-}
-
 void AGameplayGameMode::SpawnPlayerCharacter(ALetEmCookPlayerController* Player, TSubclassOf<ALetEmCookCharacter> CharacterClass, ETeam Team)
 {
 	FActorSpawnParameters SpawnParams;
@@ -115,7 +107,7 @@ void AGameplayGameMode::RaiseCollisionEvent(ALetEmCookProjectile* ProjectileA, A
 void AGameplayGameMode::ReceiveOrders(ALetEmCookProjectile* OrderProjectile)
 {
 	UOrderInfoData* DeliveredOrder = nullptr;
-
+	UE_LOG(LogTemp, Warning, TEXT("Order Received"));
 	for (const TObjectPtr<UOrderInfoData> OrderInfo : ActiveOrders)
 	{
 		const AModularProjectile* OrderModular = Cast<AModularProjectile>(OrderProjectile);
@@ -313,11 +305,11 @@ void AGameplayGameMode::AddOrderPoints(ETeam Team, int Points)
 	switch (Team)
 	{
 		case ETeam::Blue:
-			BlueTeamPoints += Points;
+			BlueTeamScore += Points;
 			break;
 
 		case ETeam::Red:
-			RedTeamPoints += Points;
+			RedTeamScore += Points;
 			break;
 	}
 }
