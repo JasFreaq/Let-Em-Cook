@@ -11,7 +11,7 @@ class UGameItemData;
 /**
  * 
  */
-UCLASS()
+UCLASS(BlueprintType)
 class LETEMCOOK_API UTransmuteData : public UDataAsset
 {
 	GENERATED_BODY()

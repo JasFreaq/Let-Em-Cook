@@ -20,7 +20,7 @@ enum class EProjectileType : uint8
 /**
  * 
  */
-UCLASS()
+UCLASS(BlueprintType)
 class LETEMCOOK_API UGameItemData : public UDataAsset
 {
 	GENERATED_BODY()

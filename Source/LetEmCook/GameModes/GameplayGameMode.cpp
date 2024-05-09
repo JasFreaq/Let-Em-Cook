@@ -29,10 +29,13 @@ void AGameplayGameMode::Tick(float DeltaSeconds)
 
 		if (ServerTimeSeconds - LastOrderSpawnTime >= OrderSpawnCooldown)
 		{
-			if (ActiveOrders.Num() < MaxOrders)
+			if (ActiveOrders.Num() <= MaxOrders)
 			{
+				UOrderInfoData* NewOrder = OrdersInfo[FMath::RandRange(0, OrdersInfo.Num() - 1)];
+				UE_LOG(LogTemp, Warning, TEXT("New Order: %s"), *NewOrder->GetName());
+				ActiveOrders.Add(NewOrder);
 
-				ActiveOrders.Add(OrdersInfo[FMath::RandRange(0, OrdersInfo.Num() - 1)]);
+				OrderAddedDelegate.Broadcast(NewOrder);
 
 				LastOrderSpawnTime = ServerTimeSeconds;
 			}
@@ -109,14 +112,16 @@ void AGameplayGameMode::RaiseCollisionEvent(ALetEmCookProjectile* ProjectileA, A
 	}
 }
 
-void AGameplayGameMode::ReceiveOrders(ALetEmCookProjectile* Order)
+void AGameplayGameMode::ReceiveOrders(ALetEmCookProjectile* OrderProjectile)
 {
-	for (TObjectPtr<UOrderInfoData> OrderInfo : ActiveOrders)
+	UOrderInfoData* DeliveredOrder = nullptr;
+
+	for (const TObjectPtr<UOrderInfoData> OrderInfo : ActiveOrders)
 	{
-		AModularProjectile* OrderItem = Cast<AModularProjectile>(Order);
-		if (OrderInfo->GetOrderItem() == OrderItem->GetGameItem())
+		const AModularProjectile* OrderModular = Cast<AModularProjectile>(OrderProjectile);
+		if (OrderInfo->GetOrderItem() == OrderModular->GetGameItem())
 		{
-			TArray<TObjectPtr<UGameItemData>> ItemsInOrder = OrderItem->GetItemsPossessed();
+			TArray<TObjectPtr<UGameItemData>> ItemsInOrder = OrderModular->GetItemsPossessed();
 			for (TObjectPtr<UGameItemData> GameItem : OrderInfo->GetOrderItem()->GetCompositeGameItems())
 			{
 				if (!ItemsInOrder.Contains(GameItem))
@@ -125,15 +130,29 @@ void AGameplayGameMode::ReceiveOrders(ALetEmCookProjectile* Order)
 				}
 			}
 
-			ALetEmCookCharacter* Character = OrderItem->GetOwnerCharacter();
-
-			ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Character->GetController());
-			if (PlayerController != nullptr)
-			{
-				AGameplayGameMode* GameMode = Cast<AGameplayGameMode>(GetWorld()->GetAuthGameMode());
-				GameMode->AddOrderPoints(PlayerController->GetPlayerTeam(), OrderInfo->GetPoints());
-			}
+			DeliveredOrder = OrderInfo;
 		}
+	}
+
+	if (DeliveredOrder != nullptr)
+	{
+		ALetEmCookCharacter* Character = OrderProjectile->GetOwnerCharacter();
+
+		ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Character->GetController());
+		if (PlayerController != nullptr)
+		{
+			AGameplayGameMode* GameMode = Cast<AGameplayGameMode>(GetWorld()->GetAuthGameMode());
+			GameMode->AddOrderPoints(PlayerController->GetPlayerTeam(), DeliveredOrder->GetPoints());
+		}
+
+		OrderProjectile->Destroy();
+
+		ActiveOrders.Remove(DeliveredOrder);
+		OrderRemovedDelegate.Broadcast(DeliveredOrder);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("No Order Found"));
 	}
 }
 

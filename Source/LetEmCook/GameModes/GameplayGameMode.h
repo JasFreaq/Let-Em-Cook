@@ -31,7 +31,7 @@ struct FRespawnData
 	ALetEmCookPlayerController* PlayerController;
 
 	UPROPERTY()
-	float DeathTime;
+	float DeathTime = 0.f;
 };
 
 USTRUCT()
@@ -109,8 +109,10 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<UOrderInfoData>> ActiveOrders;
 
+	UPROPERTY(BlueprintAssignable)
 	FOrdersChanged OrderAddedDelegate;
 
+	UPROPERTY(BlueprintAssignable)
 	FOrdersChanged OrderRemovedDelegate;
 
 public:
@@ -129,7 +131,7 @@ public:
 
 	void RaiseCollisionEvent(ALetEmCookProjectile* ProjectileA, ALetEmCookProjectile* ProjectileB);
 
-	void ReceiveOrders(ALetEmCookProjectile* Order);
+	void ReceiveOrders(ALetEmCookProjectile* OrderProjectile);
 
 	FOrdersChanged GetOrderAddedDelegate() const { return OrderAddedDelegate; }
 
