@@ -10,6 +10,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/BoxComponent.h"
 #include "Engine/DamageEvents.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/GameStateBase.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
@@ -32,6 +33,8 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	GetMesh()->SetOwnerNoSee(true);
 	GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, -0.f));
 	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -96.f));
+	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
+	GetMesh()->CanCharacterStepUpOn = ECB_No;
 
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
@@ -47,6 +50,7 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	Mesh1P->CastShadow = false;
 	Mesh1P->SetRelativeRotation(FRotator(-9.562271f, -100.698138f, -39.471045f));
 	Mesh1P->SetRelativeLocation(FVector(0.f, 0.f, -120.f));
+	Mesh1P->CanCharacterStepUpOn = ECB_No;
 
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 	if (HealthComponent != nullptr && GetWorld() != nullptr)
@@ -307,26 +311,27 @@ void ALetEmCookCharacter::OnBeginOverlap(UPrimitiveComponent* OverlappedComponen
 {
 	if (HasAuthority())
 	{
-		if (OtherActor->Tags.Contains(FName("Interactable")))
+		if (OtherActor->Tags.Contains(FName("Projectile")))
 		{
 			const UDamageComponent* DamageComponent = OtherActor->FindComponentByClass<UDamageComponent>();
 			if (DamageComponent != nullptr)
 			{
 				ALetEmCookProjectile* Projectile = Cast<ALetEmCookProjectile>(OtherActor);
-				if (Projectile != nullptr)
+				if (Projectile != nullptr && Projectile->CanDamage())
 				{
 					ALetEmCookCharacter* OwnerCharacter = Projectile->GetOwnerCharacter();
 					if (OwnerCharacter != nullptr)
 					{
 						ALetEmCookPlayerController* OtherController = Cast<ALetEmCookPlayerController>(OwnerCharacter->GetController());
 						ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
-
-						UE_LOG(LogTemp, Warning, TEXT("TeamA: %d has been hit by TeamB: %d"), OtherController->GetPlayerTeam(), PlayerController->GetPlayerTeam());
-
-						if (OtherController->GetPlayerTeam() != PlayerController->GetPlayerTeam())
+						
+						if (OtherController != nullptr && PlayerController != nullptr)
 						{
-							FDamageEvent DamageEvent;
-							TakeDamage(DamageComponent->GetDamage(), DamageEvent, nullptr, OtherActor);
+							if (OtherController->GetPlayerTeam() != PlayerController->GetPlayerTeam())
+							{
+								FDamageEvent DamageEvent;
+								TakeDamage(DamageComponent->GetDamage(), DamageEvent, nullptr, OtherActor);
+							}
 						}
 					}
 				}
@@ -345,10 +350,7 @@ void ALetEmCookCharacter::LaunchProjectile()
 		// Try and fire a projectile
 		if (CurrentlyHeldIngredient != nullptr)
 		{
-			DropHeldIngredient(true, true);			
-
-			CurrentlyHeldIngredient = nullptr;
-			OnPickedUpIngredient();
+			DropHeldIngredient(true, true);	
 		}
 		else if (UtensilProjectiles[CurrentProjectileIndex]->GetProjectile() != nullptr)
 		{
@@ -371,6 +373,7 @@ void ALetEmCookCharacter::LaunchProjectile()
 						Multicast_HandleProjectileThrown();
 
 						Projectile->AddImpulseToProjectile(SpawnRotation.Vector());
+						Projectile->StartProjectileTimers();
 						Projectile->SetOwnerCharacter(this);
 					}
 				}
@@ -559,9 +562,15 @@ void ALetEmCookCharacter::Multicast_HandleDeathEffects_Implementation()
 void ALetEmCookCharacter::GetProjectileSpawnLocationAndRotation(bool bUseCameraRotation, FVector& SpawnLocation, FRotator& SpawnRotation) const
 {
 	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
-
-	SpawnRotation = bUseCameraRotation ?
-		PlayerController->PlayerCameraManager->GetCameraRotation() : GetActorRotation();
+	if (PlayerController != nullptr)
+	{
+		SpawnRotation = bUseCameraRotation ?
+			PlayerController->PlayerCameraManager->GetCameraRotation() : GetActorRotation();
+	}
+	else
+	{
+		SpawnRotation = GetActorRotation();
+	}	
 
 	// ThrowOffset is in camera space, so transform it to world space before offsetting from the character location to find the final spawn position
 	SpawnLocation = GetActorLocation() + SpawnRotation.RotateVector(ThrowOffset);
@@ -647,6 +656,15 @@ void ALetEmCookCharacter::HandleHeldMeshVisibility(bool bHideAll)
 	}
 }
 
+void ALetEmCookCharacter::Multicast_DestroyHeldMesh_Implementation()
+{
+	if (HeldIngredientRepresentationMesh != nullptr)
+	{
+		HandleHeldMeshVisibility();
+		HeldIngredientRepresentationMesh->Destroy();
+	}
+}
+
 void ALetEmCookCharacter::Multicast_HandleProjectileThrown_Implementation()
 {
 	const float RealtimeSeconds = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
@@ -682,13 +700,11 @@ void ALetEmCookCharacter::PickupIngredient()
 			{
 				if (ALetEmCookProjectile* ProjectileToHold = Interactable->GetProjectile(); ProjectileToHold != nullptr)
 				{
-					if (CurrentlyHeldIngredient != nullptr)
-					{
-						DropHeldIngredient(false, false);
-					}
+					DropHeldIngredient(false, false);
 
 					CurrentlyHeldIngredient = ProjectileToHold;
 					CurrentlyOverlappedIngredient = nullptr;
+					CurrentlyHeldIngredient->StopProjectileTimers();
 					CurrentlyHeldIngredient->SetProjectileEnabled(false);
 					CurrentlyHeldIngredient->SetOwnerCharacter(this);
 
@@ -737,12 +753,6 @@ void ALetEmCookCharacter::Server_SetOverlappingIngredient_Implementation(AActor*
 
 void ALetEmCookCharacter::OnPickedUpIngredient()
 {
-	if (HeldIngredientRepresentationMesh != nullptr)
-	{
-		HandleHeldMeshVisibility();
-		HeldIngredientRepresentationMesh->Destroy();
-	}
-	
 	if (CurrentlyHeldIngredient != nullptr)
 	{
 		HandleHeldMeshVisibility(true);
@@ -777,17 +787,24 @@ void ALetEmCookCharacter::OnPickedUpIngredient()
 
 void ALetEmCookCharacter::DropHeldIngredient(bool bUseCameraRotation, bool bLaunch)
 {
-	FRotator SpawnRotation;
-	FVector SpawnLocation;
-	GetProjectileSpawnLocationAndRotation(bUseCameraRotation, SpawnLocation, SpawnRotation);
+	Multicast_DestroyHeldMesh();
 
-	CurrentlyHeldIngredient->SetActorLocation(SpawnLocation, false, nullptr, ETeleportType::ResetPhysics);
-	CurrentlyHeldIngredient->SetActorRotation(SpawnRotation, ETeleportType::ResetPhysics);
-	CurrentlyHeldIngredient->SetProjectileEnabled(true);
-
-	if (bLaunch)
+	if (CurrentlyHeldIngredient != nullptr)
 	{
-		CurrentlyHeldIngredient->AddImpulseToProjectile(SpawnRotation.Vector());
+		FRotator SpawnRotation;
+		FVector SpawnLocation;
+		GetProjectileSpawnLocationAndRotation(bUseCameraRotation, SpawnLocation, SpawnRotation);
+
+		CurrentlyHeldIngredient->SetActorLocation(SpawnLocation, false, nullptr, ETeleportType::ResetPhysics);
+		CurrentlyHeldIngredient->SetActorRotation(SpawnRotation, ETeleportType::ResetPhysics);
+		CurrentlyHeldIngredient->SetProjectileEnabled(true);
+
+		if (bLaunch)
+		{
+			CurrentlyHeldIngredient->AddImpulseToProjectile(SpawnRotation.Vector());
+		}
+
+		CurrentlyHeldIngredient = nullptr;
 	}
 }
 
@@ -804,10 +821,14 @@ float ALetEmCookCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 	}
 	else
 	{
-		ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
-		PlayerController->HandlePlayerDeath();
+		DropHeldIngredient(false, false);
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetCharacterMovement()->DisableMovement();
 
 		Multicast_HandleDeathEffects();
+
+		ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller);
+		PlayerController->HandlePlayerDeath();
 	}
 
 	if (DamageCauser != nullptr)

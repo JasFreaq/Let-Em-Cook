@@ -74,6 +74,8 @@ private:
 
 	float LastOrderSpawnTime = 0.0f;
 
+	bool bOrderScreenInitialized = false;
+
 	// Player Management
 
 	UPROPERTY(EditDefaultsOnly, Category = "Respawn")
@@ -121,7 +123,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void BeginGame();
-	
+
+	UFUNCTION(BlueprintCallable)
+	void OrderScreenInitialized() { bOrderScreenInitialized = true; }
+
 	void SpawnPlayerCharacter(ALetEmCookPlayerController* Player, TSubclassOf<ALetEmCookCharacter> CharacterClass, ETeam Team);
 
 	void SpawnSpectator(ALetEmCookPlayerController* Player, const FTransform SpawnTransform);

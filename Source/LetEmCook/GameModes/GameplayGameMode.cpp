@@ -28,17 +28,20 @@ void AGameplayGameMode::Tick(float DeltaSeconds)
 			UE_LOG(LogTemp, Warning, TEXT("Game Over"));
 		}
 
-		if (ServerTimeSeconds - LastOrderSpawnTime >= OrderSpawnCooldown)
+		if (bOrderScreenInitialized)
 		{
-			if (ActiveOrders.Num() <= MaxOrders)
+			if (ServerTimeSeconds - LastOrderSpawnTime >= OrderSpawnCooldown || LastOrderSpawnTime == 0.f)
 			{
-				UOrderInfoData* NewOrder = OrdersInfo[FMath::RandRange(0, OrdersInfo.Num() - 1)];
-				UE_LOG(LogTemp, Warning, TEXT("New Order: %s"), *NewOrder->GetName());
-				ActiveOrders.Add(NewOrder);
+				if (ActiveOrders.Num() <= MaxOrders)
+				{
+					UOrderInfoData* NewOrder = OrdersInfo[FMath::RandRange(0, OrdersInfo.Num() - 1)];
+					UE_LOG(LogTemp, Warning, TEXT("New Order: %s"), *NewOrder->GetName());
+					ActiveOrders.Add(NewOrder);
 
-				OrderAddedDelegate.Broadcast(NewOrder);
+					OrderAddedDelegate.Broadcast(NewOrder);
 
-				LastOrderSpawnTime = ServerTimeSeconds;
+					LastOrderSpawnTime = ServerTimeSeconds;
+				}
 			}
 		}
 
@@ -107,22 +110,29 @@ void AGameplayGameMode::RaiseCollisionEvent(ALetEmCookProjectile* ProjectileA, A
 void AGameplayGameMode::ReceiveOrders(ALetEmCookProjectile* OrderProjectile)
 {
 	UOrderInfoData* DeliveredOrder = nullptr;
-	UE_LOG(LogTemp, Warning, TEXT("Order Received"));
+
 	for (const TObjectPtr<UOrderInfoData> OrderInfo : ActiveOrders)
 	{
 		const AModularProjectile* OrderModular = Cast<AModularProjectile>(OrderProjectile);
-		if (OrderInfo->GetOrderItem() == OrderModular->GetGameItem())
+		if (OrderModular != nullptr)
 		{
-			TArray<TObjectPtr<UGameItemData>> ItemsInOrder = OrderModular->GetItemsPossessed();
-			for (TObjectPtr<UGameItemData> GameItem : OrderInfo->GetOrderItem()->GetCompositeGameItems())
+			if (OrderInfo->GetOrderItem() == OrderModular->GetGameItem())
 			{
-				if (!ItemsInOrder.Contains(GameItem))
+				TArray<TObjectPtr<UGameItemData>> ItemsInOrder = OrderModular->GetItemsPossessed();
+				for (TObjectPtr<UGameItemData> GameItem : OrderInfo->GetOrderItem()->GetCompositeGameItems())
 				{
-					return;
+					if (!ItemsInOrder.Contains(GameItem))
+					{
+						return;
+					}
 				}
-			}
 
-			DeliveredOrder = OrderInfo;
+				DeliveredOrder = OrderInfo;
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("No Modular Projectile found"));
 		}
 	}
 
@@ -141,6 +151,8 @@ void AGameplayGameMode::ReceiveOrders(ALetEmCookProjectile* OrderProjectile)
 
 		ActiveOrders.Remove(DeliveredOrder);
 		OrderRemovedDelegate.Broadcast(DeliveredOrder);
+
+		LastOrderSpawnTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 	}
 	else
 	{

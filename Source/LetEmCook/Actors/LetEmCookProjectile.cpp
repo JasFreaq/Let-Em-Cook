@@ -2,15 +2,16 @@
 
 #include "LetEmCookProjectile.h"
 #include "Components/BoxComponent.h"
-#include "LetEmCook/GameModes/LetEmCookGameMode.h"
+#include "GameFramework/GameStateBase.h"
 #include "GameplayTags/Classes/GameplayTagsManager.h"
 #include "GameplayTags/Classes/GameplayTagContainer.h"
+#include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/GameModes/GameplayGameMode.h"
 
 ALetEmCookProjectile::ALetEmCookProjectile() 
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	// Use a box as a simple collision representation
 	CollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComp"));
@@ -45,6 +46,28 @@ void ALetEmCookProjectile::BeginPlay()
 	OnActorHit.AddDynamic(this, &ALetEmCookProjectile::OnHit);
 }
 
+void ALetEmCookProjectile::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (HasAuthority())
+	{
+		const float CurrentTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+		if (CurrentTime - LastMovementCheckTime > NoDamageBufferTime && bCanDamage)
+		{
+			FVector CurrentLocation = GetActorLocation();
+
+			if (CurrentLocation.Equals(LastMovementCheckLocation, 1.0f))
+			{
+				bCanDamage = false;
+			}
+
+			LastMovementCheckLocation = CurrentLocation;
+			LastMovementCheckTime = CurrentTime;		
+		}
+	}
+}
+
 void ALetEmCookProjectile::OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (HasAuthority())
@@ -60,9 +83,53 @@ void ALetEmCookProjectile::OnHit(AActor* SelfActor, AActor* OtherActor, FVector 
 	}
 }
 
-void ALetEmCookProjectile::AddImpulseToProjectile(FVector ImpulseDirection) const
+void ALetEmCookProjectile::AddImpulseToProjectile(FVector ImpulseDirection)
 {
-	CollisionComp->AddImpulse(ImpulseDirection * ProjectileInitialVelocity, NAME_None, true);
+	if (HasAuthority())
+	{
+		CollisionComp->AddImpulse(ImpulseDirection * ProjectileInitialVelocity, NAME_None, true);
+	}
+}
+
+void ALetEmCookProjectile::StartProjectileTimers()
+{
+	if (HasAuthority())
+	{
+		bCanDamage = true;
+		LastMovementCheckLocation = GetActorLocation();
+		LastMovementCheckTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+
+		if (GameItemData->GetProjectileType() == EProjectileType::Utensil)
+		{
+			if (GameItemData == nullptr)
+			{
+				UE_LOG(LogTemp, Error, TEXT("Missing GameItemData in %s"), *GetName());
+				return;
+			}
+
+			if (GameItemData->GetProjectileType() == EProjectileType::Utensil)
+			{
+				GetWorld()->GetTimerManager().SetTimer(LifeTimeTimerHandle, this, &ALetEmCookProjectile::OnLifeTimeExpired, false);
+			}
+		}
+	}
+}
+
+void ALetEmCookProjectile::StopProjectileTimers()
+{
+	if (HasAuthority())
+	{
+		if (GameItemData->GetProjectileType() == EProjectileType::Utensil)
+		{
+			if (GameItemData == nullptr)
+			{
+				UE_LOG(LogTemp, Error, TEXT("Missing GameItemData in %s"), *GetName());
+				return;
+			}
+
+			GetWorld()->GetTimerManager().ClearTimer(LifeTimeTimerHandle);
+		}
+	}
 }
 
 void ALetEmCookProjectile::SetProjectileEnabled(bool bIsEnabled)
@@ -89,4 +156,9 @@ void ALetEmCookProjectile::Multicast_SetProjectileEnabled_Implementation(bool bI
 
 	CollisionComp->SetSimulatePhysics(bIsEnabled);	
 	SetActorEnableCollision(bIsEnabled);
+}
+
+void ALetEmCookProjectile::OnLifeTimeExpired()
+{
+	Destroy();
 }

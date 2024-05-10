@@ -310,6 +310,8 @@ void ULetEmCookGameInstance::OnGetMatchSuccess(const FGetMatchResult& Result)
 		}
 	}
 
+	MatchmakingStatus.Empty();
+
 	UE_LOG(LogPlayFabGSDKGameInstance, Warning, TEXT("Got Match!"));
 }
 

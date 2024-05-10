@@ -37,9 +37,24 @@ private:
 	TObjectPtr<UGameItemData> GameItemData;
 
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	float LifeTime = 5.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	int NoDamageBufferTime = 1.f;
+
 	TObjectPtr<ALetEmCookCharacter> OwnerCharacter;
 
+	FTimerHandle LifeTimeTimerHandle;
+
+	bool bCanDamage = false;
+
+	float LastMovementCheckTime = 0.f;
+
+	FVector LastMovementCheckLocation = FVector::ZeroVector;
+
 public:
+
+	virtual void Tick(float DeltaSeconds) override;
 
 	// Function to be called when hit
 	UFUNCTION()
@@ -58,9 +73,15 @@ public:
 
 	void SetOwnerCharacter(TObjectPtr<ALetEmCookCharacter> Character) { OwnerCharacter = Character; }
 
-	void AddImpulseToProjectile(FVector ImpulseDirection) const;
+	void AddImpulseToProjectile(FVector ImpulseDirection);
+
+	void StartProjectileTimers();
+
+	void StopProjectileTimers();
 
 	void SetProjectileEnabled(bool bIsEnabled);
+
+	bool CanDamage() const { return bCanDamage; }
 
 protected:
 
@@ -72,4 +93,6 @@ protected:
 private:
 
 	void SendCollisionEventToGameMode(AActor* SelfActor, AActor* OtherActor);
+
+	void OnLifeTimeExpired();
 };

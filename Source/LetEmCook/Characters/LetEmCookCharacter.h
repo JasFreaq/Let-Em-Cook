@@ -241,6 +241,9 @@ private:
 	void OnCurrentProjectileIndexChanged();
 		
 	void HandleHeldMeshVisibility(bool bHideAll = false);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_DestroyHeldMesh();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_HandleProjectileThrown();
