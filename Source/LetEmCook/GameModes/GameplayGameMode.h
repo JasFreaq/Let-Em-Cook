@@ -72,9 +72,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
 	int MaxOrders = 4;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
+	int OrderScreens = 2;
+
 	float LastOrderSpawnTime = 0.0f;
 
-	bool bOrderScreenInitialized = false;
+	int bOrderScreensInitialized;
 
 	// Player Management
 
@@ -125,7 +128,7 @@ public:
 	void BeginGame();
 
 	UFUNCTION(BlueprintCallable)
-	void OrderScreenInitialized() { bOrderScreenInitialized = true; }
+	void OrderScreenInitialized() { bOrderScreensInitialized++; }
 
 	void SpawnPlayerCharacter(ALetEmCookPlayerController* Player, TSubclassOf<ALetEmCookCharacter> CharacterClass, ETeam Team);
 

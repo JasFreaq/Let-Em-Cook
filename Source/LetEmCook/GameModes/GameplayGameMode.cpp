@@ -28,7 +28,7 @@ void AGameplayGameMode::Tick(float DeltaSeconds)
 			UE_LOG(LogTemp, Warning, TEXT("Game Over"));
 		}
 
-		if (bOrderScreenInitialized)
+		if (bOrderScreensInitialized == OrderScreens)
 		{
 			if (ServerTimeSeconds - LastOrderSpawnTime >= OrderSpawnCooldown || LastOrderSpawnTime == 0.f)
 			{
