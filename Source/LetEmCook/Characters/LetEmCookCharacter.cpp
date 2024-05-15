@@ -557,6 +557,13 @@ void ALetEmCookCharacter::Multicast_HandleDeathEffects_Implementation()
 
 		GetMesh()->GetAnimInstance()->Montage_Play(DeathAnimation, DeathAnimationRate);		
 	}
+
+	SetActorEnableCollision(false);
+
+	for (AHeldProjectileMesh* ProjectileMesh : ProjectileRepresentationMeshes)
+	{
+		ProjectileMesh->Destroy();
+	}
 }
 
 void ALetEmCookCharacter::GetProjectileSpawnLocationAndRotation(bool bUseCameraRotation, FVector& SpawnLocation, FRotator& SpawnRotation) const
@@ -822,7 +829,6 @@ float ALetEmCookCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 	else
 	{
 		DropHeldIngredient(false, false);
-		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		GetCharacterMovement()->DisableMovement();
 
 		Multicast_HandleDeathEffects();

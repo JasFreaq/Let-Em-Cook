@@ -99,18 +99,16 @@ void ALetEmCookProjectile::StartProjectileTimers()
 		LastMovementCheckLocation = GetActorLocation();
 		LastMovementCheckTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 
-		if (GameItemData->GetProjectileType() == EProjectileType::Utensil)
+		if (GameItemData != nullptr)
 		{
-			if (GameItemData == nullptr)
-			{
-				UE_LOG(LogTemp, Error, TEXT("Missing GameItemData in %s"), *GetName());
-				return;
-			}
-
 			if (GameItemData->GetProjectileType() == EProjectileType::Utensil)
 			{
-				GetWorld()->GetTimerManager().SetTimer(LifeTimeTimerHandle, this, &ALetEmCookProjectile::OnLifeTimeExpired, false);
+				GetWorld()->GetTimerManager().SetTimer(LifeTimeTimerHandle, this, &ALetEmCookProjectile::OnLifeTimeExpired, LifeTime);
 			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Missing GameItemData in %s"), *GetName());
 		}
 	}
 }
@@ -119,15 +117,16 @@ void ALetEmCookProjectile::StopProjectileTimers()
 {
 	if (HasAuthority())
 	{
-		if (GameItemData->GetProjectileType() == EProjectileType::Utensil)
+		if (GameItemData != nullptr)
 		{
-			if (GameItemData == nullptr)
+			if (GetWorld()->GetTimerManager().IsTimerActive(LifeTimeTimerHandle))
 			{
-				UE_LOG(LogTemp, Error, TEXT("Missing GameItemData in %s"), *GetName());
-				return;
+				GetWorld()->GetTimerManager().ClearTimer(LifeTimeTimerHandle);
 			}
-
-			GetWorld()->GetTimerManager().ClearTimer(LifeTimeTimerHandle);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Missing GameItemData in %s"), *GetName());
 		}
 	}
 }

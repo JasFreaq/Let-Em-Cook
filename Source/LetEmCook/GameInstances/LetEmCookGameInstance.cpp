@@ -156,7 +156,7 @@ void ULetEmCookGameInstance::RegisterAccount(FString Username, FString Email, FS
 void ULetEmCookGameInstance::StartMatchmaking()
 {
 	TSharedPtr<FJsonObject> LatencyItemJson = MakeShared<FJsonObject>();
-	LatencyItemJson->SetStringField(TEXT("region"), TEXT("EastUs"));
+	LatencyItemJson->SetStringField(TEXT("region"), TEXT("NorthEurope"));
 	LatencyItemJson->SetStringField(TEXT("latency"), TEXT("150"));
 
 	TSharedPtr<FJsonObject> LatencyItemJsonValue = MakeShared<FJsonObject>();
