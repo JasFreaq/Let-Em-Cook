@@ -79,6 +79,11 @@ void ALetEmCookCharacter::BeginPlay()
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
+
+		if (IsLocallyControlled())
+		{
+			PlayerController->bShowMouseCursor = false;
+		}
 	}
 
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ALetEmCookCharacter::OnBeginOverlap);
@@ -117,7 +122,7 @@ void ALetEmCookCharacter::Tick(float DeltaTime)
 
 		// Calculate the end point of the raycast
 		FVector EndLocation = PlayerLocation + PlayerRotation.Vector() * RaycastDistance;
-
+		
 		// Perform the raycast
 		FHitResult HitResult;
 		FCollisionQueryParams CollisionParams;
@@ -195,7 +200,7 @@ void ALetEmCookCharacter::Tick(float DeltaTime)
 void ALetEmCookCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
+	
 	DOREPLIFETIME(ALetEmCookCharacter, CurrentProjectileIndex);
 
 	DOREPLIFETIME(ALetEmCookCharacter, CurrentlyOverlappedIngredient);
@@ -569,18 +574,29 @@ void ALetEmCookCharacter::Multicast_HandleDeathEffects_Implementation()
 void ALetEmCookCharacter::GetProjectileSpawnLocationAndRotation(bool bUseCameraRotation, FVector& SpawnLocation, FRotator& SpawnRotation) const
 {
 	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+	FVector SpawnLocationBase;
+
 	if (PlayerController != nullptr)
 	{
+		FVector ViewPointLocation;
+		FRotator _;
+		PlayerController->GetPlayerViewPoint(ViewPointLocation, _);
+		SpawnLocationBase = ViewPointLocation;		
+
 		SpawnRotation = bUseCameraRotation ?
 			PlayerController->PlayerCameraManager->GetCameraRotation() : GetActorRotation();
 	}
 	else
 	{
+		SpawnLocationBase = GetActorLocation();
 		SpawnRotation = GetActorRotation();
 	}	
 
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("SpawnLocationBase: %s"), *SpawnLocationBase.ToString()));
+
 	// ThrowOffset is in camera space, so transform it to world space before offsetting from the character location to find the final spawn position
-	SpawnLocation = GetActorLocation() + SpawnRotation.RotateVector(ThrowOffset);
+	SpawnLocation = SpawnLocationBase + SpawnRotation.RotateVector(ThrowOffset);
 }
 
 void ALetEmCookCharacter::SetProjectileToPrevious()
