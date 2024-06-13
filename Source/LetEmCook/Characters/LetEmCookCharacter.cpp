@@ -221,15 +221,6 @@ void ALetEmCookCharacter::Tick(float DeltaTime)
 			}
 		}
 	}
-	else
-	{
-		FRotator SpawnRotation;
-		FVector SpawnLocation;
-		GetProjectileSpawnLocationAndRotation(false, SpawnLocation, SpawnRotation);
-
-		CurrentlyHeldIngredient->SetActorLocation(SpawnLocation, false, nullptr, ETeleportType::ResetPhysics);
-		CurrentlyHeldIngredient->SetActorRotation(SpawnRotation, ETeleportType::ResetPhysics);
-	}
 }
 
 void ALetEmCookCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -627,8 +618,6 @@ void ALetEmCookCharacter::GetProjectileSpawnLocationAndRotation(bool bUseCameraR
 		SpawnLocationBase = GetActorLocation();
 		SpawnRotation = GetActorRotation();
 	}	
-
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("SpawnLocationBase: %s"), *SpawnLocationBase.ToString()));
 
 	// ThrowOffset is in camera space, so transform it to world space before offsetting from the character location to find the final spawn position
 	SpawnLocation = SpawnLocationBase + SpawnRotation.RotateVector(ThrowOffset);

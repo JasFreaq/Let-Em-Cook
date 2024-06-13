@@ -4,6 +4,7 @@
 #include "ItemContainer.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/GameStateBase.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/Actors/LetEmCookProjectile.h"

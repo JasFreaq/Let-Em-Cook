@@ -31,7 +31,7 @@ ALetEmCookProjectile::ALetEmCookProjectile()
 	Mesh->SetupAttachment(CollisionComp);
 	Mesh->BodyInstance.SetCollisionProfileName("NoCollision");
 	Mesh->CanCharacterStepUpOn = ECB_No;
-
+	
 	Tags.Add(FName("Interactable"));
 	Tags.Add(FName("Projectile"));
 
@@ -42,6 +42,14 @@ ALetEmCookProjectile::ALetEmCookProjectile()
 void ALetEmCookProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (HasAuthority())
+	{
+		if (bLaunchStraight)
+		{
+			CollisionComp->SetEnableGravity(false);
+		}
+	}
 
 	OnActorHit.AddDynamic(this, &ALetEmCookProjectile::OnHit);
 }
@@ -78,6 +86,11 @@ void ALetEmCookProjectile::OnHit(AActor* SelfActor, AActor* OtherActor, FVector 
 		}
 		else
 		{
+			if (!CollisionComp->IsGravityEnabled())
+			{
+				CollisionComp->SetEnableGravity(true);
+			}
+
 			CollisionComp->ClearMoveIgnoreActors();
 		}
 	}
@@ -87,7 +100,8 @@ void ALetEmCookProjectile::AddImpulseToProjectile(FVector ImpulseDirection)
 {
 	if (HasAuthority())
 	{
-		CollisionComp->AddImpulse(ImpulseDirection * ProjectileInitialVelocity, NAME_None, true);
+		CollisionComp->AddImpulse(ImpulseDirection * Impulse, NAME_None, true);
+		CollisionComp->AddAngularImpulseInDegrees(FVector(360.f, 0.f, 0.f), NAME_None, true);
 	}
 }
 

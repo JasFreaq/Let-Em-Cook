@@ -9,6 +9,7 @@
 
 class UBoxComponent;
 class UStaticMeshComponent;
+class UProjectileMovementComponent;
 class UGameItemData;
 class ALetEmCookCharacter;
 
@@ -29,17 +30,23 @@ private:
 	/** Static mesh component */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,  meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> Mesh;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float Impulse = 2400.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Projectile, meta = (AllowPrivateAccess = "true"))
-	float ProjectileInitialVelocity = 2400.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", ToolTip = "In degrees."))
+	float AngularImpulse = 360.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	bool bLaunchStraight = false;
+
+	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UGameItemData> GameItemData;
 
-	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	UPROPERTY(EditDefaultsOnly)
 	float LifeTime = 5.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = Projectile)
+	UPROPERTY(EditDefaultsOnly)
 	int NoDamageBufferTime = 1.f;
 
 	TObjectPtr<ALetEmCookCharacter> OwnerCharacter;
