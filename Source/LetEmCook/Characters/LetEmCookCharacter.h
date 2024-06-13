@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
+#include "LetEmCook/Enums/ETeam.h"
 #include "LetEmCookCharacter.generated.h"
 
 class UInputComponent;
@@ -260,4 +261,9 @@ private:
 	void OnPickedUpIngredient();
 
 	void DropHeldIngredient(bool bUseCameraRotation, bool bLaunch);
+
+	void SetOutlineColour(ETeam Team);
+
+	UPROPERTY(EditAnywhere)
+	bool bShowTeamColours = true;
 };

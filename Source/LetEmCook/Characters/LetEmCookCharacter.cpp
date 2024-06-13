@@ -84,6 +84,13 @@ void ALetEmCookCharacter::BeginPlay()
 		{
 			PlayerController->bShowMouseCursor = false;
 		}
+
+		ALetEmCookPlayerController* LTCPlayerController = Cast<ALetEmCookPlayerController>(PlayerController);
+		if (LTCPlayerController)
+		{
+			ETeam Team = LTCPlayerController->GetPlayerTeam();
+			SetOutlineColour(Team);
+		}
 	}
 
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ALetEmCookCharacter::OnBeginOverlap);
@@ -107,6 +114,34 @@ void ALetEmCookCharacter::BeginPlay()
 	{
 		ProjectileCooldownMap.Add(Utensil->GetProjectile(), 0.f);
 	}
+}
+
+void ALetEmCookCharacter::SetOutlineColour(ETeam Team)
+{
+	if (bShowTeamColours)
+	{
+		switch (Team)
+		{
+			case ETeam::Red:
+				GetMesh()->SetCustomDepthStencilValue(250); // 250 is Red
+				break;
+			case ETeam::Blue:
+				GetMesh()->SetCustomDepthStencilValue(251); // 251 is Blue
+				break;
+		}
+	}
+	else
+	{
+		if (IsLocallyControlled())
+		{
+			GetMesh()->SetCustomDepthStencilValue(251);
+		}
+		else
+		{
+			GetMesh()->SetCustomDepthStencilValue(250);
+		}
+	}
+	GetMesh()->MarkRenderStateDirty();
 }
 
 void ALetEmCookCharacter::Tick(float DeltaTime)
