@@ -374,6 +374,46 @@ void ALetEmCookCharacter::OnBeginOverlap(UPrimitiveComponent* OverlappedComponen
 //////////////////////////////////////////////////////////////////////////
 // Projectile Handling
 
+void ALetEmCookCharacter::DisplayAimedProjectileTrajectory()
+{
+	if (IsLocallyControlled())
+	{
+		float Impulse;
+		bool bLaunchStraight;
+		
+		if (CurrentlyHeldIngredient != nullptr)
+		{
+			CurrentlyHeldIngredient->GetLaunchImpulseData(Impulse, bLaunchStraight);
+		}
+		else if (UtensilProjectiles[CurrentProjectileIndex]->GetProjectile() != nullptr)
+		{
+			UtensilProjectiles[CurrentProjectileIndex]->GetProjectile().GetDefaultObject()->GetLaunchImpulseData(Impulse, bLaunchStraight);
+		}
+		else
+		{
+			return;
+		}
+
+		FRotator SpawnRotation;
+		FVector SpawnLocation;
+		GetProjectileSpawnLocationAndRotation(true, SpawnLocation, SpawnRotation);
+
+		FPredictProjectilePathParams PredictParams;
+		PredictParams.StartLocation = SpawnLocation;
+		PredictParams.LaunchVelocity = SpawnRotation.Vector() * Impulse;
+		PredictParams.bTraceWithCollision = true;
+		PredictParams.ActorsToIgnore.Add(this);
+
+
+		FPredictProjectilePathResult PredictResult;
+
+		if (UGameplayStatics::PredictProjectilePath(this, PredictParams, PredictResult))
+		{
+			
+		}
+	}
+}
+
 void ALetEmCookCharacter::LaunchProjectile()
 {
 	if (HasAuthority())

@@ -5,13 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "LetEmCook/Interfaces/Interactable.h"
-#include "LetEmCook/DataAssets/ProjectileWeightData.h"
 #include "LetEmCookProjectile.generated.h"
 
 class UBoxComponent;
 class UStaticMeshComponent;
-class UProjectileMovementComponent;
 class UGameItemData;
+class UProjectileWeightData;
 class ALetEmCookCharacter;
 
 UCLASS(config=Game)
@@ -31,9 +30,6 @@ private:
 	/** Static mesh component */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,  meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> Mesh;
-
-	UPROPERTY(EditDefaultsOnly)
-	EProjectileWeightClass WeightClass;
 	
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UGameItemData> GameItemData;
@@ -45,13 +41,7 @@ private:
 	int NoDamageBufferTime = 1.f;
 
 	TObjectPtr<UProjectileWeightData> WeightData;
-
-	float Impulse;
-
-	float AngularImpulse;
-
-	bool bLaunchStraight;
-
+	
 	TObjectPtr<ALetEmCookCharacter> OwnerCharacter;
 
 	FTimerHandle LifeTimeTimerHandle;
@@ -79,6 +69,8 @@ public:
 
 	virtual ALetEmCookProjectile* GetProjectile() override { return this; }
 
+	bool GetLaunchImpulseData(float& Impulse, bool& bLaunchStraight) const;
+
 	TObjectPtr<ALetEmCookCharacter> GetOwnerCharacter() const { return OwnerCharacter; }
 
 	void SetOwnerCharacter(TObjectPtr<ALetEmCookCharacter> Character) { OwnerCharacter = Character; }
@@ -101,6 +93,8 @@ protected:
 	void Multicast_SetProjectileEnabled(bool bIsEnabled);
 
 private:
+
+	bool GetLaunchImpulseData(float& Impulse, float& AngularImpulse, bool& bLaunchStraight) const;
 
 	void SendCollisionEventToGameMode(AActor* SelfActor, AActor* OtherActor);
 

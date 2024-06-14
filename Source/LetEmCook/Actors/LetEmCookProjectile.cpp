@@ -6,6 +6,7 @@
 #include "GameplayTags/Classes/GameplayTagsManager.h"
 #include "GameplayTags/Classes/GameplayTagContainer.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
+#include "LetEmCook/DataAssets/ProjectileWeightData.h"
 #include "LetEmCook/GameModes/GameplayGameMode.h"
 
 ALetEmCookProjectile::ALetEmCookProjectile() 
@@ -48,31 +49,7 @@ ALetEmCookProjectile::ALetEmCookProjectile()
 void ALetEmCookProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (HasAuthority())
-	{
-		if (bLaunchStraight)
-		{
-			CollisionComp->SetEnableGravity(false);
-		}
-	}
-
-	if (WeightData != nullptr)
-	{
-		FProjectileImpulse ImpulseData = WeightData->GetProjectileImpulse(WeightClass);
-		Impulse = ImpulseData.Impulse;
-		AngularImpulse = ImpulseData.AngularImpulse;
-
-		if (WeightClass == EProjectileWeightClass::Bullet)
-		{
-			bLaunchStraight = true;
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Missing ProjectileWeightData in %s"), *GetName());
-	}
-
+	
 	OnActorHit.AddDynamic(this, &ALetEmCookProjectile::OnHit);
 }
 
@@ -118,12 +95,48 @@ void ALetEmCookProjectile::OnHit(AActor* SelfActor, AActor* OtherActor, FVector 
 	}
 }
 
+bool ALetEmCookProjectile::GetLaunchImpulseData(float& Impulse, bool& bLaunchStraight) const
+{
+	float _;
+	return GetLaunchImpulseData(Impulse, _, bLaunchStraight);
+}
+
+bool ALetEmCookProjectile::GetLaunchImpulseData(float& Impulse, float& AngularImpulse, bool& bLaunchStraight) const
+{
+	if (WeightData != nullptr)
+	{
+		EProjectileWeightClass WeightClass = GameItemData->GetWeightClass();
+		FProjectileImpulse ImpulseData = WeightData->GetProjectileImpulse(WeightClass);
+
+		Impulse =  ImpulseData.Impulse;
+		AngularImpulse = ImpulseData.AngularImpulse;
+		bLaunchStraight = WeightClass == EProjectileWeightClass::Bullet;
+
+		return true;
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("Missing ProjectileWeightData in %s"), *GetName());
+	return false;
+}
+
 void ALetEmCookProjectile::AddImpulseToProjectile(FVector ImpulseDirection)
 {
 	if (HasAuthority())
 	{
+		float Impulse; 
+		float AngularImpulse;
+		bool bLaunchStraight;
+		GetLaunchImpulseData(Impulse, AngularImpulse, bLaunchStraight);
+
+		if (bLaunchStraight)
+		{
+			CollisionComp->SetEnableGravity(false);
+		}
+
 		CollisionComp->AddImpulse(ImpulseDirection * Impulse, NAME_None, true);
-		CollisionComp->AddAngularImpulseInDegrees(FVector(360.f, 0.f, 0.f), NAME_None, true);
+
+		FVector LocalXAxis = GetTransform().GetRotation().GetRightVector();
+		CollisionComp->AddAngularImpulseInDegrees(LocalXAxis * AngularImpulse, NAME_None, true);
 	}
 }
 

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "LetEmCook/DataAssets/ProjectileWeightData.h"
 #include "GameItemData.generated.h"
 
 class ALetEmCookProjectile;
@@ -35,6 +36,9 @@ class LETEMCOOK_API UGameItemData : public UDataAsset
 	EProjectileType ProjectileType;
 
 	UPROPERTY(EditDefaultsOnly)
+	EProjectileWeightClass WeightClass;
+
+	UPROPERTY(EditDefaultsOnly)
 	TArray<TObjectPtr<UGameItemData>> CompositeGameItems;
 
 	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "ProjectileType == EProjectileType::Utensil"))
@@ -53,6 +57,8 @@ public:
 	TSubclassOf<ALetEmCookProjectile> GetProjectile() const { return Projectile; }
 
 	EProjectileType GetProjectileType() const { return ProjectileType; }
+
+	EProjectileWeightClass GetWeightClass() const { return WeightClass; }
 
 	TArray<TObjectPtr<UGameItemData>> GetCompositeGameItems() const { return CompositeGameItems; }
 

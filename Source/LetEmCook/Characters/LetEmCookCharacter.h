@@ -164,6 +164,8 @@ public:
 	
 	virtual void Tick(float DeltaTime) override;
 
+	void DisplayAimedProjectileTrajectory();
+
 	void LaunchProjectile();
 
 	UFUNCTION()
@@ -194,7 +196,7 @@ private:
 
 	/** Aim a Utensil/Ingredient */
 	void AimProjectile();
-
+	
 	/** Throw a Utensil/Ingredient */
 	void ThrowProjectile();
 
