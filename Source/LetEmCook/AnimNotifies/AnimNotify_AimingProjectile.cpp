@@ -18,6 +18,6 @@ void UAnimNotify_AimingProjectile::Notify(USkeletalMeshComponent* MeshComp, UAni
 	ALetEmCookCharacter* Character = Cast<ALetEmCookCharacter>(MeshComp->GetOwner());
 	if (Character != nullptr && Character->IsLocallyControlled())
 	{
-		Character->DisplayAimedProjectileTrajectory();
+		Character->SetIsAiming(true);
 	}
 }

@@ -148,6 +148,14 @@ void ALetEmCookCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	/*if (IsLocallyControlled())
+	{
+		if (bIsAiming)
+		{
+			DisplayAimedProjectileTrajectory();
+		}
+	}*/
+
 	if (Controller != nullptr)
 	{
 		// Get the player's viewpoint
@@ -157,16 +165,14 @@ void ALetEmCookCharacter::Tick(float DeltaTime)
 
 		// Calculate the end point of the raycast
 		FVector EndLocation = PlayerLocation + PlayerRotation.Vector() * RaycastDistance;
-		
+
 		// Perform the raycast
 		FHitResult HitResult;
 		FCollisionQueryParams CollisionParams;
 		CollisionParams.AddIgnoredActor(this); // Ignore the actor performing the raycast
-		
-		AActor* HitActor = nullptr;
-		bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, PlayerLocation, EndLocation, ECC_Visibility, CollisionParams);
 
-		if (bHit)
+		AActor* HitActor = nullptr;
+		if (GetWorld()->LineTraceSingleByChannel(HitResult, PlayerLocation, EndLocation, ECC_Visibility, CollisionParams))
 		{
 			// Handle hit
 			HitActor = HitResult.GetActor();
@@ -193,7 +199,7 @@ void ALetEmCookCharacter::Tick(float DeltaTime)
 				}
 			}
 		}
-		
+
 		if (HitActor == nullptr)
 		{
 			if (CurrentlyOverlappedIngredient != nullptr)
@@ -402,8 +408,15 @@ void ALetEmCookCharacter::DisplayAimedProjectileTrajectory()
 		PredictParams.StartLocation = SpawnLocation;
 		PredictParams.LaunchVelocity = SpawnRotation.Vector() * Impulse;
 		PredictParams.bTraceWithCollision = true;
+		PredictParams.ObjectTypes.Append({ UEngineTypes::ConvertToObjectType(ECC_Visibility), UEngineTypes::ConvertToObjectType(ECC_WorldStatic), UEngineTypes::ConvertToObjectType(ECC_WorldDynamic), UEngineTypes::ConvertToObjectType(ECC_WorldStatic), UEngineTypes::ConvertToObjectType(ECC_Pawn), UEngineTypes::ConvertToObjectType(ECC_PhysicsBody), UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel1) });
 		PredictParams.ActorsToIgnore.Add(this);
+		PredictParams.SimFrequency = 10.f;
+		PredictParams.MaxSimTime = 3.5f;
+		if (bLaunchStraight)
+			PredictParams.OverrideGravityZ = 0.f;
 
+		PredictParams.DrawDebugType = EDrawDebugTrace::ForDuration;
+		PredictParams.DrawDebugTime = 60.f;
 
 		FPredictProjectilePathResult PredictResult;
 
@@ -416,6 +429,11 @@ void ALetEmCookCharacter::DisplayAimedProjectileTrajectory()
 
 void ALetEmCookCharacter::LaunchProjectile()
 {
+	if (IsLocallyControlled())
+	{
+		SetIsAiming(false);
+	}
+
 	if (HasAuthority())
 	{
 		// Try and fire a projectile
@@ -584,6 +602,11 @@ void ALetEmCookCharacter::Multicast_HandleProjectileThrowing_Implementation()
 
 void ALetEmCookCharacter::Multicast_HandleGetHitEffects_Implementation()
 {
+	if (IsLocallyControlled())
+	{
+		SetIsAiming(false);
+	}
+
 	// Try and play the sound if specified
 	if (GetHitSound != nullptr)
 	{

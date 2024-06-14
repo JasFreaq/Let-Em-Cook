@@ -142,6 +142,8 @@ private:
 
 	TMap<TSubclassOf<ALetEmCookProjectile>, float> ProjectileCooldownMap;
 
+	bool bIsAiming = false;
+
 	UPROPERTY(Replicated)
 	TObjectPtr<AActor> CurrentlyOverlappedIngredient;
 
@@ -164,7 +166,7 @@ public:
 	
 	virtual void Tick(float DeltaTime) override;
 
-	void DisplayAimedProjectileTrajectory();
+	void SetIsAiming(bool IsAiming) { bIsAiming = IsAiming; }
 
 	void LaunchProjectile();
 
@@ -196,7 +198,9 @@ private:
 
 	/** Aim a Utensil/Ingredient */
 	void AimProjectile();
-	
+
+	void DisplayAimedProjectileTrajectory();
+
 	/** Throw a Utensil/Ingredient */
 	void ThrowProjectile();
 
