@@ -31,7 +31,13 @@ ALetEmCookProjectile::ALetEmCookProjectile()
 	Mesh->SetupAttachment(CollisionComp);
 	Mesh->BodyInstance.SetCollisionProfileName("NoCollision");
 	Mesh->CanCharacterStepUpOn = ECB_No;
-	
+
+	static ConstructorHelpers::FObjectFinder<UProjectileWeightData> WeightDataFinder(TEXT("/Game/_Game/DataAssets/ProjectileWeightData"));
+	if (WeightDataFinder.Succeeded())
+	{
+		WeightData = WeightDataFinder.Object;
+	}
+
 	Tags.Add(FName("Interactable"));
 	Tags.Add(FName("Projectile"));
 
@@ -49,6 +55,22 @@ void ALetEmCookProjectile::BeginPlay()
 		{
 			CollisionComp->SetEnableGravity(false);
 		}
+	}
+
+	if (WeightData != nullptr)
+	{
+		FProjectileImpulse ImpulseData = WeightData->GetProjectileImpulse(WeightClass);
+		Impulse = ImpulseData.Impulse;
+		AngularImpulse = ImpulseData.AngularImpulse;
+
+		if (WeightClass == EProjectileWeightClass::Bullet)
+		{
+			bLaunchStraight = true;
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Missing ProjectileWeightData in %s"), *GetName());
 	}
 
 	OnActorHit.AddDynamic(this, &ALetEmCookProjectile::OnHit);

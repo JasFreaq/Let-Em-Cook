@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "LetEmCook/Interfaces/Interactable.h"
+#include "LetEmCook/DataAssets/ProjectileWeightData.h"
 #include "LetEmCookProjectile.generated.h"
 
 class UBoxComponent;
@@ -30,16 +31,10 @@ private:
 	/** Static mesh component */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,  meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> Mesh;
+
+	UPROPERTY(EditDefaultsOnly)
+	EProjectileWeightClass WeightClass;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float Impulse = 2400.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", ToolTip = "In degrees."))
-	float AngularImpulse = 360.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	bool bLaunchStraight = false;
-
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UGameItemData> GameItemData;
 
@@ -48,6 +43,14 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	int NoDamageBufferTime = 1.f;
+
+	TObjectPtr<UProjectileWeightData> WeightData;
+
+	float Impulse;
+
+	float AngularImpulse;
+
+	bool bLaunchStraight;
 
 	TObjectPtr<ALetEmCookCharacter> OwnerCharacter;
 
