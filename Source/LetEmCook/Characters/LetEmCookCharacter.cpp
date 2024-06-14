@@ -85,12 +85,12 @@ void ALetEmCookCharacter::BeginPlay()
 			PlayerController->bShowMouseCursor = false;
 		}
 
-		ALetEmCookPlayerController* LTCPlayerController = Cast<ALetEmCookPlayerController>(PlayerController);
+		/*ALetEmCookPlayerController* LTCPlayerController = Cast<ALetEmCookPlayerController>(PlayerController);
 		if (LTCPlayerController)
 		{
 			ETeam Team = LTCPlayerController->GetPlayerTeam();
 			SetOutlineColour(Team);
-		}
+		}*/
 	}
 
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ALetEmCookCharacter::OnBeginOverlap);

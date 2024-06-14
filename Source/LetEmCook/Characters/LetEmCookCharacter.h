@@ -178,6 +178,8 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	void SetOutlineColour(ETeam Team);
+
 protected:
 
 	virtual void BeginPlay();
@@ -268,7 +270,7 @@ private:
 
 	void DropHeldIngredient(bool bUseCameraRotation, bool bLaunch);
 
-	void SetOutlineColour(ETeam Team);
+	
 
 	UPROPERTY(EditAnywhere)
 	bool bShowTeamColours = true;

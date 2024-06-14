@@ -80,7 +80,10 @@ void AGameplayGameMode::SpawnPlayerCharacter(ALetEmCookPlayerController* Player,
 	const FTransform SpawnTransform = GetPlayerSpawnTransform(Team);
 
 	AActor* SpawnedCharacter = GetWorld()->SpawnActor(CharacterClass, &SpawnTransform, SpawnParams);
-
+	if (ALetEmCookCharacter* LTCCharacter = Cast<ALetEmCookCharacter>(SpawnedCharacter))
+	{
+		LTCCharacter->SetOutlineColour(Team);
+	}
 	Player->Possess(Cast<APawn>(SpawnedCharacter));
 }
 
@@ -94,7 +97,6 @@ void AGameplayGameMode::SpawnSpectator(ALetEmCookPlayerController* Player, const
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 	AActor* SpawnedCharacter = GetWorld()->SpawnActor(SpectatorPawn, &SpawnTransform, SpawnParams);
-
 	Player->Possess(Cast<APawn>(SpawnedCharacter));
 }
 
