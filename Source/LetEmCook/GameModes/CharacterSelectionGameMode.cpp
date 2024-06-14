@@ -38,7 +38,7 @@ void ACharacterSelectionGameMode::Tick(float DeltaSeconds)
 
 			UE_LOG(LogTemp, Warning, TEXT("Travelling to Game Map"));
 
-			const FString URL = FString::Printf(TEXT("/Game/_Game/%s?listen"), *GameMap);
+			const FString URL = FString::Printf(TEXT("/Game/_Game/%s?listen"), bUseTestMap ? *TestMap : *GameMap);
 			GetWorld()->ServerTravel(URL);
 		}
 	}

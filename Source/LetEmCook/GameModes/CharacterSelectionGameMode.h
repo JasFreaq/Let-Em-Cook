@@ -17,7 +17,13 @@ class LETEMCOOK_API ACharacterSelectionGameMode : public ALetEmCookGameMode
 	// Networking
 
 	UPROPERTY(EditDefaultsOnly)
-	FString GameMap = "GameplayTest_Level";
+	FString GameMap = "Sasha/KitchenLVL1";
+
+	UPROPERTY(EditDefaultsOnly)
+	FString TestMap = "Maps/GameplayTest_Level";
+
+	UPROPERTY(EditDefaultsOnly)
+	bool bUseTestMap = false;
 
 	UPROPERTY(EditDefaultsOnly)
 	int QueueSize = 2;
