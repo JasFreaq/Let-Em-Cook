@@ -142,6 +142,7 @@ private:
 
 	TMap<TSubclassOf<ALetEmCookProjectile>, float> ProjectileCooldownMap;
 
+	UPROPERTY(Replicated)
 	bool bIsAiming = false;
 
 	UPROPERTY(Replicated)
@@ -166,7 +167,7 @@ public:
 	
 	virtual void Tick(float DeltaTime) override;
 
-	void SetIsAiming(bool IsAiming) { bIsAiming = IsAiming; }
+	void SetIsAiming(bool IsAiming);
 
 	void LaunchProjectile();
 
@@ -215,6 +216,11 @@ private:
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	void SetOverlappingInteractable(AActor* Actor);
+
+	void ResetOverlap();
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetIsAiming(bool IsAiming);
 
 	/** Launch the actual Utensil/Ingredient */
 	UFUNCTION(Server, Reliable)

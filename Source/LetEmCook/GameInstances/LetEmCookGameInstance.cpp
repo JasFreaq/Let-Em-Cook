@@ -229,6 +229,7 @@ void ULetEmCookGameInstance::OnLoginSuccess(const FLoginResult& Result)
 	OnAuthentication(Result.EntityToken, Result.PlayFabId);
 
 	UE_LOG(LogPlayFabGSDKGameInstance, Warning, TEXT("PlayFab Login Success!"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Login Success!"));
 }
 
 void ULetEmCookGameInstance::OnRegisterSuccess(const FRegisterPlayFabUserResult& Result)
@@ -236,6 +237,7 @@ void ULetEmCookGameInstance::OnRegisterSuccess(const FRegisterPlayFabUserResult&
 	OnAuthentication(Result.EntityToken, Result.PlayFabId);
 
 	UE_LOG(LogPlayFabGSDKGameInstance, Warning, TEXT("PlayFab Register Success!"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Register Success!"));
 }
 
 void ULetEmCookGameInstance::OnGetAccountInfoSuccess(const FGetAccountInfoResult& Result)
@@ -340,6 +342,7 @@ void ULetEmCookGameInstance::OnGetEntityTokenSuccess(const FGetEntityTokenRespon
 void ULetEmCookGameInstance::OnPlayFabError(const FPlayFabCppError& PlayFabCppError)
 {
 	UE_LOG(LogPlayFabGSDKGameInstance, Error, TEXT("PlayFab Error Report:\n%s"), *PlayFabCppError.GenerateErrorReport());
+	GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Red, FString::Printf(TEXT("PlayFab Error Report:\n%s"), *PlayFabCppError.GenerateErrorReport()));
 }
 
 //////////////////////////////////////////////////////////////////////////

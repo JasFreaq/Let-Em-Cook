@@ -158,58 +158,57 @@ void ALetEmCookCharacter::Tick(float DeltaTime)
 
 	if (Controller != nullptr)
 	{
-		// Get the player's viewpoint
-		FVector PlayerLocation;
-		FRotator PlayerRotation;
-		Controller->GetPlayerViewPoint(PlayerLocation, PlayerRotation);
-
-		// Calculate the end point of the raycast
-		FVector EndLocation = PlayerLocation + PlayerRotation.Vector() * RaycastDistance;
-
-		// Perform the raycast
-		FHitResult HitResult;
-		FCollisionQueryParams CollisionParams;
-		CollisionParams.AddIgnoredActor(this); // Ignore the actor performing the raycast
-
-		AActor* HitActor = nullptr;
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, PlayerLocation, EndLocation, ECC_Visibility, CollisionParams))
+		if (bIsAiming)
 		{
-			// Handle hit
-			HitActor = HitResult.GetActor();
-			if (HitActor != nullptr)
-			{
-				if (HitActor->Tags.Contains(FName("Interactable")))
-				{
-					if (const IInteractable* OverlappingInteractable = Cast<IInteractable>(HitActor); OverlappingInteractable != nullptr)
-					{
-						if (OverlappingInteractable->GetGameItem() != nullptr)
-						{
-							if (ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller); PlayerController != nullptr)
-							{
-								PlayerController->ShowPickupWidget(OverlappingInteractable->GetGameItem()->GetAssetName());
-							}
-						}
-						else
-						{
-							UE_LOG(LogTemp, Warning, TEXT("Overlapping %s does not have a GameItemData asset assigned."), *HitActor->GetName());
-						}
+			ResetOverlap();
+		}
+		else
+		{
+			// Get the player's viewpoint
+			FVector PlayerLocation;
+			FRotator PlayerRotation;
+			Controller->GetPlayerViewPoint(PlayerLocation, PlayerRotation);
 
-						SetOverlappingInteractable(HitActor);
+			// Calculate the end point of the raycast
+			FVector EndLocation = PlayerLocation + PlayerRotation.Vector() * RaycastDistance;
+
+			// Perform the raycast
+			FHitResult HitResult;
+			FCollisionQueryParams CollisionParams;
+			CollisionParams.AddIgnoredActor(this); // Ignore the actor performing the raycast
+
+			AActor* HitActor = nullptr;
+			if (GetWorld()->LineTraceSingleByChannel(HitResult, PlayerLocation, EndLocation, ECC_Visibility, CollisionParams))
+			{
+				// Handle hit
+				HitActor = HitResult.GetActor();
+				if (HitActor != nullptr)
+				{
+					if (HitActor->Tags.Contains(FName("Interactable")))
+					{
+						if (const IInteractable* OverlappingInteractable = Cast<IInteractable>(HitActor); OverlappingInteractable != nullptr)
+						{
+							if (OverlappingInteractable->GetGameItem() != nullptr)
+							{
+								if (ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller); PlayerController != nullptr)
+								{
+									PlayerController->ShowPickupWidget(OverlappingInteractable->GetGameItem()->GetAssetName());
+								}
+							}
+							else
+							{
+								UE_LOG(LogTemp, Warning, TEXT("Overlapping %s does not have a GameItemData asset assigned."), *HitActor->GetName());
+							}
+
+							SetOverlappingInteractable(HitActor);
+						}
 					}
 				}
 			}
-		}
 
-		if (HitActor == nullptr)
-		{
-			if (CurrentlyOverlappedIngredient != nullptr)
+			if (HitActor == nullptr)
 			{
-				if (ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller); PlayerController != nullptr)
-				{
-					PlayerController->HidePickupWidget();
-				}
-
-				SetOverlappingInteractable(nullptr);
+				ResetOverlap();
 			}
 		}
 	}
@@ -233,6 +232,7 @@ void ALetEmCookCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
+	DOREPLIFETIME(ALetEmCookCharacter, bIsAiming);
 	DOREPLIFETIME(ALetEmCookCharacter, CurrentProjectileIndex);
 
 	DOREPLIFETIME(ALetEmCookCharacter, CurrentlyOverlappedIngredient);
@@ -380,6 +380,18 @@ void ALetEmCookCharacter::OnBeginOverlap(UPrimitiveComponent* OverlappedComponen
 //////////////////////////////////////////////////////////////////////////
 // Projectile Handling
 
+void ALetEmCookCharacter::SetIsAiming(bool IsAiming)
+{
+	if (HasAuthority())
+	{
+		bIsAiming = IsAiming;
+	}
+	else
+	{
+		Server_SetIsAiming(IsAiming);
+	}
+}
+
 void ALetEmCookCharacter::DisplayAimedProjectileTrajectory()
 {
 	if (IsLocallyControlled())
@@ -428,13 +440,10 @@ void ALetEmCookCharacter::DisplayAimedProjectileTrajectory()
 
 void ALetEmCookCharacter::LaunchProjectile()
 {
-	if (IsLocallyControlled())
-	{
-		SetIsAiming(false);
-	}
-
 	if (HasAuthority())
 	{
+		SetIsAiming(false);
+
 		// Try and fire a projectile
 		if (CurrentlyHeldIngredient != nullptr)
 		{
@@ -533,6 +542,11 @@ void ALetEmCookCharacter::ThrowProjectile()
 	}
 }
 
+void ALetEmCookCharacter::Server_SetIsAiming_Implementation(bool IsAiming)
+{
+	SetIsAiming(IsAiming);
+}
+
 void ALetEmCookCharacter::Server_LaunchProjectile_Implementation()
 {
 	LaunchProjectile();
@@ -601,11 +615,6 @@ void ALetEmCookCharacter::Multicast_HandleProjectileThrowing_Implementation()
 
 void ALetEmCookCharacter::Multicast_HandleGetHitEffects_Implementation()
 {
-	if (IsLocallyControlled())
-	{
-		SetIsAiming(false);
-	}
-
 	// Try and play the sound if specified
 	if (GetHitSound != nullptr)
 	{
@@ -850,6 +859,19 @@ void ALetEmCookCharacter::SetOverlappingInteractable(AActor* Actor)
 	}
 }
 
+void ALetEmCookCharacter::ResetOverlap()
+{
+	if (CurrentlyOverlappedIngredient != nullptr)
+	{
+		if (ALetEmCookPlayerController* PlayerController = Cast<ALetEmCookPlayerController>(Controller); PlayerController != nullptr)
+		{
+			PlayerController->HidePickupWidget();
+		}
+
+		SetOverlappingInteractable(nullptr);
+	}
+}
+
 void ALetEmCookCharacter::Server_PickupIngredient_Implementation()
 {
 	PickupIngredient();
@@ -922,6 +944,8 @@ void ALetEmCookCharacter::DropHeldIngredient(bool bUseCameraRotation, bool bLaun
 
 float ALetEmCookCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	SetIsAiming(false);
+
 	HealthComponent->ApplyDamage(DamageAmount);
 
 	if (HealthComponent->GetCurrentHealth() > 0.f)
