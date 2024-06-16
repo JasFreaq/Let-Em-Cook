@@ -148,13 +148,13 @@ void ALetEmCookCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	/*if (IsLocallyControlled())
+	if (IsLocallyControlled())
 	{
 		if (bIsAiming)
 		{
 			DisplayAimedProjectileTrajectory();
 		}
-	}*/
+	}
 
 	if (Controller != nullptr)
 	{
@@ -413,10 +413,9 @@ void ALetEmCookCharacter::DisplayAimedProjectileTrajectory()
 		PredictParams.SimFrequency = 10.f;
 		PredictParams.MaxSimTime = 3.5f;
 		if (bLaunchStraight)
-			PredictParams.OverrideGravityZ = 0.f;
+			PredictParams.OverrideGravityZ = -0.001f;
 
-		PredictParams.DrawDebugType = EDrawDebugTrace::ForDuration;
-		PredictParams.DrawDebugTime = 60.f;
+		PredictParams.DrawDebugType = EDrawDebugTrace::ForOneFrame;
 
 		FPredictProjectilePathResult PredictResult;
 
