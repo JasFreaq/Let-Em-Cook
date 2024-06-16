@@ -5,6 +5,7 @@
 #include "GameFramework/GameStateBase.h"
 #include "GameplayTags/Classes/GameplayTagsManager.h"
 #include "GameplayTags/Classes/GameplayTagContainer.h"
+#include "LetEmCook/ActorComponents/ItemOutlinerComponent.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/DataAssets/ProjectileWeightData.h"
 #include "LetEmCook/GameModes/GameplayGameMode.h"
@@ -32,6 +33,13 @@ ALetEmCookProjectile::ALetEmCookProjectile()
 	Mesh->SetupAttachment(CollisionComp);
 	Mesh->BodyInstance.SetCollisionProfileName("NoCollision");
 	Mesh->CanCharacterStepUpOn = ECB_No;
+
+	OutlinerComp = CreateDefaultSubobject<UItemOutlinerComponent>(TEXT("OutlinerComp"));
+	OutlinerComp->SetupAttachment(CollisionComp);
+	OutlinerComp->SetOutlineRoot(Mesh);
+	OutlinerComp->SetSphereRadius(300.f);
+	OutlinerComp->BodyInstance.SetCollisionProfileName("OverlapOnlyPawnIgnoreVisibility");
+	OutlinerComp->CanCharacterStepUpOn = ECB_No;
 
 	static ConstructorHelpers::FObjectFinder<UProjectileWeightData> WeightDataFinder(TEXT("/Game/_Game/DataAssets/ProjectileWeightData"));
 	if (WeightDataFinder.Succeeded())

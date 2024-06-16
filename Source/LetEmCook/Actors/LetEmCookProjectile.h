@@ -9,6 +9,7 @@
 
 class UBoxComponent;
 class UStaticMeshComponent;
+class UItemOutlinerComponent;
 class UGameItemData;
 class UProjectileWeightData;
 class ALetEmCookCharacter;
@@ -30,7 +31,10 @@ private:
 	/** Static mesh component */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly,  meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> Mesh;
-	
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UItemOutlinerComponent> OutlinerComp;
+
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UGameItemData> GameItemData;
 

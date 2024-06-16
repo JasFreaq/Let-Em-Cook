@@ -6,6 +6,7 @@
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "LetEmCook/ActorComponents/ItemOutlinerComponent.h"
 #include "LetEmCook/DataAssets/GameItemData.h"
 #include "LetEmCook/Actors/LetEmCookProjectile.h"
 
@@ -33,7 +34,14 @@ AItemContainer::AItemContainer()
 	ContainerMesh->SetRelativeLocation(FVector(0.f, 0.f, -40.f));
 	ContainerMesh->BodyInstance.SetCollisionProfileName("BlockAll");
 	ContainerMesh->CanCharacterStepUpOn = ECB_No;
-	
+
+	OutlinerComp = CreateDefaultSubobject<UItemOutlinerComponent>(TEXT("OutlinerComp"));
+	OutlinerComp->SetupAttachment(CollisionComp);
+	OutlinerComp->SetOutlineRoot(ContainerMesh);
+	OutlinerComp->SetSphereRadius(450.f);
+	OutlinerComp->BodyInstance.SetCollisionProfileName("OverlapOnlyPawnIgnoreVisibility");
+	OutlinerComp->CanCharacterStepUpOn = ECB_No;
+
 	Tags.Add("Interactable");
 
 	bReplicates = true;

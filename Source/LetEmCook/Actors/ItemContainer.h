@@ -9,6 +9,7 @@
 
 class UBoxComponent;
 class UStaticMeshComponent;
+class UItemOutlinerComponent;
 class UGameItemData;
 
 UCLASS()
@@ -31,6 +32,9 @@ private:
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TArray<TObjectPtr<UStaticMeshComponent>> ItemMeshes;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UItemOutlinerComponent> OutlinerComp;
 	
 	UPROPERTY(EditDefaultsOnly, Category = Items)
 	TObjectPtr<UGameItemData> GameItemData;
