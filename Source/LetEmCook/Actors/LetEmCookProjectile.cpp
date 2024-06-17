@@ -143,8 +143,8 @@ void ALetEmCookProjectile::AddImpulseToProjectile(FVector ImpulseDirection)
 
 		CollisionComp->AddImpulse(ImpulseDirection * Impulse, NAME_None, true);
 
-		/*FVector LocalXAxis = GetTransform().GetRotation().GetRightVector();
-		CollisionComp->AddAngularImpulseInDegrees(LocalXAxis * AngularImpulse, NAME_None, true);*/
+		FVector LocalXAxis = GetTransform().GetRotation().GetRightVector();
+		CollisionComp->AddAngularImpulseInDegrees(LocalXAxis * AngularImpulse, NAME_None, true);
 	}
 }
 
