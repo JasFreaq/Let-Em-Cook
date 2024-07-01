@@ -28,8 +28,8 @@ void AGameplayGameMode::Tick(float DeltaSeconds)
 			UE_LOG(LogTemp, Warning, TEXT("Game Over"));
 		}
 
-		if (bOrderScreensInitialized == OrderScreens)
-		{
+		//if (bOrderScreensInitialized == OrderScreens)
+		//{
 			if (ServerTimeSeconds - LastOrderSpawnTime >= OrderSpawnCooldown || LastOrderSpawnTime == 0.f)
 			{
 				if (ActiveOrders.Num() <= MaxOrders)
@@ -43,7 +43,7 @@ void AGameplayGameMode::Tick(float DeltaSeconds)
 					LastOrderSpawnTime = ServerTimeSeconds;
 				}
 			}
-		}
+		//}
 
 		ProcessCollision();
 

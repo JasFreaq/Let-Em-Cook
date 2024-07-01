@@ -26,7 +26,7 @@ class LETEMCOOK_API ALetEmCookPlayerController : public APlayerController
 	UPROPERTY(EditDefaultsOnly, Category = UI)
 	TSubclassOf<UUserWidget> GameOverWidget;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TObjectPtr<UUserWidget> HUDWidgetInstance;
 
 	UPROPERTY(Replicated)

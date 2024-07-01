@@ -21,6 +21,8 @@
 #include "LetEmCook/ActorComponents/DamageComponent.h"
 #include "LetEmCook/ActorComponents/HealthComponent.h"
 #include "LetEmCook/Actors/ModularProjectile.h"
+#include "LetEmCook/PlayerStates/GameplayPlayerState.h"
+#include "LetEmCook/UserWidgets/OverheadWidget.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -58,6 +60,7 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	{
 		HealthComponent->RegisterComponent();
 	}
+	HealthComponent->SetIsReplicated(true);
 
 	OverheadWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidgetComponent"));
 	OverheadWidgetComponent->SetupAttachment(RootComponent);
@@ -619,6 +622,12 @@ void ALetEmCookCharacter::Multicast_HandleProjectileThrowing_Implementation()
 
 void ALetEmCookCharacter::Multicast_HandleGetHitEffects_Implementation()
 {
+	UOverheadWidget* OverheadWidget = Cast<UOverheadWidget>(OverheadWidgetComponent->GetWidget()); 
+	if (OverheadWidget != nullptr)
+	{
+		OverheadWidget->UpdateHealth(this);
+	}
+
 	// Try and play the sound if specified
 	if (GetHitSound != nullptr)
 	{
@@ -951,6 +960,12 @@ float ALetEmCookCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Da
 	SetIsAiming(false);
 
 	HealthComponent->ApplyDamage(DamageAmount);
+
+	AGameplayPlayerState* GameplayPlayerState = Cast<AGameplayPlayerState>(GetPlayerState());
+	if (GameplayPlayerState != nullptr)
+	{
+		GameplayPlayerState->SetHealthRatio(HealthComponent->GetCurrentHealthRatio());
+	}
 
 	if (HealthComponent->GetCurrentHealth() > 0.f)
 	{

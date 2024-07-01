@@ -29,6 +29,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ShowName(APawn* InPawn);
 
+	UFUNCTION(BlueprintCallable)
+	void UpdateHealth(APawn* InPawn);
+
 protected:
 
 	virtual void NativeDestruct() override;
@@ -41,6 +44,15 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Overhead Widget Properties", meta = (AllowPrivateAccess = true, Units = "Seconds"))
 	float GetPlayerNameInterval = 0.1f;
 
-	float TotalTime = -0.1f;
+	float TotalPlayerNameTime = -0.1f;
 
+	UPROPERTY(EditAnywhere, Category = "Overhead Widget Properties", meta = (AllowPrivateAccess = true, Units = "Seconds"))
+	float GetHealthRatioTimeout = 30.f;
+
+	UPROPERTY(EditAnywhere, Category = "Overhead Widget Properties", meta = (AllowPrivateAccess = true, Units = "Seconds"))
+	float GetHealthRatioInterval = 0.1f;
+
+	float TotalHealthRatioTime = -0.1f;
+
+	float LastHealthRatio = 1.f;
 };
