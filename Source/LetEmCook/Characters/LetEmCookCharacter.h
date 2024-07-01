@@ -22,6 +22,7 @@ class UGameItemData;
 class AHeldProjectileMesh;
 class UUserWidget;
 class UHealthComponent;
+class UWidgetComponent;
 
 UCLASS(config=Game)
 class ALetEmCookCharacter : public ACharacter
@@ -44,6 +45,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Damage, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UHealthComponent> HealthComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Overhead Widget", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UWidgetComponent> OverheadWidgetComponent;
 
 	/** AnimMontage Throw section name */
 	UPROPERTY(EditDefaultsOnly, Category = Mesh)

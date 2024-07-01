@@ -5,6 +5,7 @@
 #include "LetEmCook/Actors/HeldProjectileMesh.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
@@ -57,6 +58,9 @@ ALetEmCookCharacter::ALetEmCookCharacter()
 	{
 		HealthComponent->RegisterComponent();
 	}
+
+	OverheadWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidgetComponent"));
+	OverheadWidgetComponent->SetupAttachment(RootComponent);
 
 	Tags.Add(FName("Interactable"));
 
