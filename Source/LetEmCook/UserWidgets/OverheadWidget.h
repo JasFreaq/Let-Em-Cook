@@ -24,6 +24,8 @@ public:
 
 	void SetCharacterName(FString CharacterName);
 
+	void SetHealthPercent(float Percent);
+
 	UFUNCTION(BlueprintCallable)
 	void ShowName(APawn* InPawn);
 

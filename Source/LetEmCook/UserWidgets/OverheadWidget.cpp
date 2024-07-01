@@ -4,6 +4,7 @@
 #include "OverheadWidget.h"
 
 #include "Components/TextBlock.h"
+#include "Components/ProgressBar.h"
 #include "GameFramework/PlayerState.h"
 
 void UOverheadWidget::SetCharacterName(FString CharacterName)
@@ -11,6 +12,14 @@ void UOverheadWidget::SetCharacterName(FString CharacterName)
 	if (Name)
 	{
 		Name->SetText(FText::FromString(CharacterName));
+	}
+}
+
+void UOverheadWidget::SetHealthPercent(float Percent)
+{
+	if (HealthBar)
+	{
+		HealthBar->SetPercent(Percent);
 	}
 }
 
